@@ -1,0 +1,125 @@
+import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature } from '../types/route';
+import polyline from '@mapbox/polyline';
+
+const CARTOWAY_BASE_URL = 'https://router.cartoway.com';
+
+export class CartowayApiService {
+  private apiKey: string;
+
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || import.meta.env.ROUTER_API_KEY || 'demo';
+  }
+
+  async calculateRoute(
+    origin: RoutePoint,
+    destination: RoutePoint,
+    options: RouteOptions
+  ): Promise<CartowayResponse> {
+    // Format coordinates as: lat1,lng1,lat2,lng2
+    const locs = `${origin.lat},${origin.lng},${destination.lat},${destination.lng}`;
+
+    const params = new URLSearchParams({
+      api_key: this.apiKey,
+      mode: options.mode,
+      locs: locs,
+      geometry: options.geometry ? 'true' : 'false',
+      precision: '6'
+    });
+
+    try {
+      const url = `${CARTOWAY_BASE_URL}/0.1/routes?${params}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Cartoway API response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error calling Cartoway API:', error);
+      throw error;
+    }
+  }
+
+  // Helper function to convert Cartoway response to RouteResult format
+  convertToRouteResult(feature: CartowayFeature, mode: string): {
+    mode: string;
+    duration: number;
+    distance: number;
+    geometry: {
+      coordinates: [number, number][];
+      type: string;
+    };
+  } {
+    try {
+      // Decode polyline to coordinates using @mapbox/polyline
+      const decodedCoordinates = polyline.decode(feature.geometry.polylines);
+
+      // @mapbox/polyline returns [lat, lng] format, convert to [lng, lat] for GeoJSON
+      // But we still need to validate and fix invalid coordinates
+      const coordinates: [number, number][] = decodedCoordinates.map((coord, index) => {
+        let [lat, lng] = coord;
+
+        // TODO: Investigate why we need to divide by 10
+        lat = lat / 10;
+        lng = lng / 10;
+
+        return [lng, lat]; // Convert to [lng, lat] for GeoJSON
+      });
+
+      return {
+        mode,
+        duration: feature.properties.router.total_time,
+        distance: feature.properties.router.total_distance,
+        geometry: {
+          coordinates,
+          type: 'LineString',
+        },
+      };
+    } catch (error) {
+
+      // Fallback: return empty geometry
+      return {
+        mode,
+        duration: feature.properties.router.total_time,
+        distance: feature.properties.router.total_distance,
+        geometry: {
+          coordinates: [],
+          type: 'LineString',
+        },
+      };
+    }
+  }
+
+  async calculateMultipleRoutes(
+    origin: RoutePoint,
+    destination: RoutePoint,
+    modes: string[]
+  ): Promise<CartowayResponse[]> {
+    const promises = modes.map(mode =>
+      this.calculateRoute(origin, destination, {
+        mode,
+        geometry: true,
+      })
+    );
+
+    try {
+      const results = await Promise.allSettled(promises);
+      return results
+        .filter((result): result is PromiseFulfilledResult<CartowayResponse> =>
+          result.status === 'fulfilled'
+        )
+        .map(result => result.value);
+    } catch (error) {
+      console.error('Error calculating multiple routes:', error);
+      throw error;
+    }
+  }
+}

@@ -1,0 +1,147 @@
+import React, { useState, useEffect } from 'react';
+import { MapComponent } from './components/MapComponent';
+import { RouteControls } from './components/RouteControls';
+import { RouteResults } from './components/RouteResults';
+import { useRouteCalculation } from './hooks/useRouteCalculation';
+import { RoutePoint } from './types/route';
+
+function App() {
+  const [origin, setOrigin] = useState<RoutePoint | null>(null);
+  const [destination, setDestination] = useState<RoutePoint | null>(null);
+  const [selectedModes, setSelectedModes] = useState<string[]>(['car', 'bicycle']);
+  const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
+
+  const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
+
+  // Auto-calculate routes when both points are set and modes are selected
+  useEffect(() => {
+    if (origin && destination) {
+      if (selectedModes.length > 0) {
+        // Calculate routes if modes are selected
+        calculateRoutes(origin, destination, selectedModes);
+        setVisibleRoutes(selectedModes);
+      } else {
+        // Clear routes if no modes are selected
+        clearRoutes();
+        setVisibleRoutes([]);
+      }
+    }
+  }, [origin, destination, selectedModes, calculateRoutes, clearRoutes]);
+
+  const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
+    if (type === 'origin') {
+      setOrigin(point);
+      // Clear routes if origin is removed
+      if (!point) {
+        clearRoutes();
+        setVisibleRoutes([]);
+      }
+    } else {
+      setDestination(point);
+      // Clear routes if destination is removed
+      if (!point) {
+        clearRoutes();
+        setVisibleRoutes([]);
+      }
+    }
+  };
+
+  const handleModeToggle = (mode: string) => {
+    setSelectedModes(prev =>
+      prev.includes(mode)
+        ? prev.filter(m => m !== mode)
+        : [...prev, mode]
+    );
+  };
+
+  const handleToggleRouteVisibility = (mode: string) => {
+    setVisibleRoutes(prev =>
+      prev.includes(mode)
+        ? prev.filter(m => m !== mode)
+        : [...prev, mode]
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
+              <img src="/favico.svg" alt="Logo" className="h-8 w-auto lg:hidden" />
+              <img src="/logo.svg" alt="Logo" className="h-8 w-auto hidden lg:block" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Router demo</h1>
+                <p className="text-sm text-gray-500">Calculateur d'itinéraires multi-modal</p>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500 hidden lg:block">
+              Powered by Cartoway
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4 h-[calc(100vh-112px)] lg:h-[calc(100vh-140px)]">
+
+          {/* Left Sidebar - Controls */}
+          <div className="lg:col-span-3 space-y-6 overflow-y-auto max-h-full order-2 lg:order-1 p-4 lg:p-0">
+            <RouteControls
+              origin={origin}
+              destination={destination}
+              selectedModes={selectedModes}
+              onModeToggle={handleModeToggle}
+              onPointSelect={handlePointSelect}
+              isCalculating={isCalculating}
+            />
+          </div>
+
+          {/* Main Map Area */}
+          <div className="lg:col-span-6 order-1 lg:order-2">
+            <div className="h-96 lg:h-full">
+              <MapComponent
+                onPointSelect={handlePointSelect}
+                origin={origin}
+                destination={destination}
+                routes={routes}
+                visibleRoutes={visibleRoutes}
+              />
+            </div>
+          </div>
+
+          {/* Right Sidebar - Results */}
+          <div className="lg:col-span-3 space-y-6 overflow-y-auto max-h-full order-3 p-4 lg:p-0">
+            {routes.length > 0 && (
+              <RouteResults
+                routes={routes}
+                visibleRoutes={visibleRoutes}
+                onToggleRouteVisibility={handleToggleRouteVisibility}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg">
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer - Mobile only */}
+      <footer className="lg:hidden bg-white border-t py-4">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-sm text-gray-500">
+            Powered by Cartoway
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
