@@ -28,7 +28,8 @@
   },
   "routeResults": {
     "title": "Résultats des itinéraires",
-    "fastest": "Plus rapide"
+    "fastest": "Plus rapide",
+    "shortest": "Plus court"
   },
   "map": {
     "instructions": {

@@ -119,11 +119,18 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                 </div>
               </div>
 
-              {route.duration === Math.min(...routes.map(r => r.duration)) && (
-                <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {t('routeResults.fastest')}
-                </div>
-              )}
+              <div className="mt-2 flex flex-wrap gap-1">
+                {route.duration === Math.min(...routes.map(r => r.duration)) && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {t('routeResults.fastest')}
+                  </div>
+                )}
+                {route.distance === Math.min(...routes.map(r => r.distance)) && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {t('routeResults.shortest')}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

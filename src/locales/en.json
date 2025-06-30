@@ -28,7 +28,8 @@
   },
   "routeResults": {
     "title": "Route Results",
-    "fastest": "Fastest"
+    "fastest": "Fastest",
+    "shortest": "Shortest"
   },
   "map": {
     "instructions": {
