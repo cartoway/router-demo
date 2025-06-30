@@ -107,7 +107,10 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       zoom: 10,
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.current.addControl(new maplibregl.NavigationControl({
+      showCompass: false,
+      showZoom: true
+    }), 'top-right');
 
     // Wait for map to load before setting the flag
     map.current.on('load', () => {
