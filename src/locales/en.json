@@ -1,0 +1,46 @@
+{
+  "app": {
+    "title": "Router demo",
+    "subtitle": "Multi-modal route calculator",
+    "poweredBy": "Powered by Cartoway"
+  },
+  "routeControls": {
+    "title": "Route Calculator",
+    "origin": {
+      "label": "Origin",
+      "defined": "✓ Defined",
+      "notDefined": "Not defined",
+      "removeTooltip": "Remove origin"
+    },
+    "destination": {
+      "label": "Destination",
+      "defined": "✓ Defined",
+      "notDefined": "Not defined",
+      "removeTooltip": "Remove destination"
+    },
+    "transportModes": {
+      "title": "Transport modes",
+      "selectMode": "Select a transport mode to calculate the route"
+    },
+    "status": {
+      "calculating": "Calculating..."
+    }
+  },
+  "routeResults": {
+    "title": "Route Results",
+    "fastest": "Fastest"
+  },
+  "map": {
+    "instructions": {
+      "selectOrigin": "Click on the map to set origin",
+      "selectDestination": "Click on the map to set destination",
+      "modifyDestination": "Click on the map to modify destination",
+      "removeMarker": "Click on a marker to remove it"
+    },
+    "legend": {
+      "title": "Legend",
+      "origin": "Origin",
+      "destination": "Destination"
+    }
+  }
+}

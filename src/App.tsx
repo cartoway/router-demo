@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { MapComponent } from './components/MapComponent';
 import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
+import { Header } from './components/Header';
 import { useRouteCalculation } from './hooks/useRouteCalculation';
+import { useTranslation } from './contexts/TranslationContext';
 import { RoutePoint } from './types/route';
 
 function App() {
@@ -12,6 +14,7 @@ function App() {
   const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
+  const { t } = useTranslation();
 
   // Auto-calculate routes when both points are set and modes are selected
   useEffect(() => {
@@ -64,25 +67,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <img src="/favico.svg" alt="Logo" className="h-8 w-auto lg:hidden" />
-              <img src="/logo.svg" alt="Logo" className="h-8 w-auto hidden lg:block" />
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Router demo</h1>
-                <p className="text-sm text-gray-500">Calculateur d'itinéraires multi-modal</p>
-              </div>
-            </div>
-            <div className="text-sm text-gray-500 hidden lg:block">
-              Powered by Cartoway
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <Header />
       {/* Main Content */}
       <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4 h-[calc(100vh-112px)] lg:h-[calc(100vh-140px)]">
@@ -136,7 +121,7 @@ function App() {
       <footer className="lg:hidden bg-white border-t py-4">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-500">
-            Powered by Cartoway
+            {t('app.poweredBy')}
           </div>
         </div>
       </footer>

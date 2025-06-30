@@ -1,0 +1,46 @@
+{
+  "app": {
+    "title": "Router demo",
+    "subtitle": "Calculateur d'itinéraires multi-modal",
+    "poweredBy": "Powered by Cartoway"
+  },
+  "routeControls": {
+    "title": "Calculateur d'itinéraires",
+    "origin": {
+      "label": "Origine",
+      "defined": "✓ Définie",
+      "notDefined": "Non définie",
+      "removeTooltip": "Supprimer l'origine"
+    },
+    "destination": {
+      "label": "Destination",
+      "defined": "✓ Définie",
+      "notDefined": "Non définie",
+      "removeTooltip": "Supprimer la destination"
+    },
+    "transportModes": {
+      "title": "Modes de transport",
+      "selectMode": "Sélectionnez un mode de transport pour calculer l'itinéraire"
+    },
+    "status": {
+      "calculating": "Calcul en cours..."
+    }
+  },
+  "routeResults": {
+    "title": "Résultats des itinéraires",
+    "fastest": "Plus rapide"
+  },
+  "map": {
+    "instructions": {
+      "selectOrigin": "Cliquez sur la carte pour définir l'origine",
+      "selectDestination": "Cliquez sur la carte pour définir la destination",
+      "modifyDestination": "Cliquez sur la carte pour modifier la destination",
+      "removeMarker": "Cliquez sur un marqueur pour le supprimer"
+    },
+    "legend": {
+      "title": "Légende",
+      "origin": "Origine",
+      "destination": "Destination"
+    }
+  }
+}

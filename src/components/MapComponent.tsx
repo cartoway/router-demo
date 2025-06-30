@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import { RoutePoint, RouteResult } from '../types/route';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface MapComponentProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
@@ -17,6 +18,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   routes,
   visibleRoutes,
 }) => {
+  const { t } = useTranslation();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const originMarker = useRef<maplibregl.Marker | null>(null);
@@ -342,11 +344,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
   const getInstructionText = () => {
     if (!origin && !destination) {
-      return 'Cliquez sur la carte pour définir l\'origine';
+      return t('map.instructions.selectOrigin');
     } else if (origin && !destination) {
-      return 'Cliquez sur la carte pour définir la destination';
+      return t('map.instructions.selectDestination');
     } else if (origin && destination) {
-      return 'Cliquez sur la carte pour modifier la destination';
+      return t('map.instructions.modifyDestination');
     }
     return '';
   };
@@ -362,7 +364,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         </p>
         {(origin || destination) && (
           <p className="text-xs text-gray-600 mt-1">
-            Cliquez sur un marqueur pour le supprimer
+            {t('map.instructions.removeMarker')}
           </p>
         )}
       </div>
@@ -370,18 +372,18 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       {/* Legend */}
       {(origin || destination) && (
         <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-          <div className="text-xs font-medium text-gray-700 mb-2">Légende</div>
+          <div className="text-xs font-medium text-gray-700 mb-2">{t('map.legend.title')}</div>
           <div className="space-y-1">
             {origin && (
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                <span className="text-xs text-gray-600">Origine</span>
+                <span className="text-xs text-gray-600">{t('map.legend.origin')}</span>
               </div>
             )}
             {destination && (
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
-                <span className="text-xs text-gray-600">Destination</span>
+                <span className="text-xs text-gray-600">{t('map.legend.destination')}</span>
               </div>
             )}
           </div>

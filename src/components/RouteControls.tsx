@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { RoutePoint } from '../types/route';
 import { TRANSPORT_MODES } from '../config/transportModes';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface RouteControlsProps {
   origin: RoutePoint | null;
@@ -24,6 +25,8 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   onPointSelect,
   isCalculating,
 }) => {
+  const { t } = useTranslation();
+
   const formatCoordinates = (point: RoutePoint) => {
     return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
   };
@@ -32,23 +35,23 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex items-center space-x-2">
         <FontAwesomeIcon icon={faLocationDot} className="h-5 w-5 text-blue-600" />
-        <h2 className="text-lg font-semibold text-gray-900">Calculateur d'itinéraires</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('routeControls.title')}</h2>
       </div>
 
       {/* Origin & Destination Status */}
       <div className="space-y-2 sm:space-y-3">
         <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700">Origine</span>
+            <span className="text-sm font-medium text-gray-700">{t('routeControls.origin.label')}</span>
             <div className="flex items-center space-x-2">
               <span className={`text-sm ${origin ? 'text-green-600' : 'text-gray-400'}`}>
-                {origin ? '✓ Définie' : 'Non définie'}
+                {origin ? t('routeControls.origin.defined') : t('routeControls.origin.notDefined')}
               </span>
               {origin && (
                 <button
                   onClick={() => onPointSelect(null, 'origin')}
                   className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title="Supprimer l'origine"
+                  title={t('routeControls.origin.removeTooltip')}
                 >
                   <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
                 </button>
@@ -64,16 +67,16 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
 
         <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700">Destination</span>
+            <span className="text-sm font-medium text-gray-700">{t('routeControls.destination.label')}</span>
             <div className="flex items-center space-x-2">
               <span className={`text-sm ${destination ? 'text-green-600' : 'text-gray-400'}`}>
-                {destination ? '✓ Définie' : 'Non définie'}
+                {destination ? t('routeControls.destination.defined') : t('routeControls.destination.notDefined')}
               </span>
               {destination && (
                 <button
                   onClick={() => onPointSelect(null, 'destination')}
                   className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title="Supprimer la destination"
+                  title={t('routeControls.destination.removeTooltip')}
                 >
                   <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
                 </button>
@@ -90,7 +93,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
 
       {/* Transport Modes */}
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-2 sm:mb-3">Modes de transport</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2 sm:mb-3">{t('routeControls.transportModes.title')}</h3>
         <div className="grid grid-cols-2 gap-2">
           {TRANSPORT_MODES.map(({ id, label, icon: Icon, color }) => (
             <button
@@ -114,14 +117,14 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
         {isCalculating && (
           <div className="flex items-center justify-center p-2 sm:p-3 bg-blue-50 rounded-lg">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            <span className="text-sm text-blue-700 font-medium">Calcul en cours...</span>
+            <span className="text-sm text-blue-700 font-medium">{t('routeControls.status.calculating')}</span>
           </div>
         )}
 
         {origin && destination && selectedModes.length === 0 && (
           <div className="flex items-center justify-center p-2 sm:p-3 bg-yellow-50 rounded-lg border border-yellow-200">
             <span className="text-sm text-yellow-700 font-medium">
-              Sélectionnez un mode de transport pour calculer l'itinéraire
+              {t('routeControls.transportModes.selectMode')}
             </span>
           </div>
         )}

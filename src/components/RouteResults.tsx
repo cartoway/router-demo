@@ -9,6 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { RouteResult } from '../types/route';
 import { getModeLabel } from '../config/transportModes';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface RouteResultsProps {
   routes: RouteResult[];
@@ -21,6 +22,8 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
   visibleRoutes,
   onToggleRouteVisibility,
 }) => {
+  const { t } = useTranslation();
+
   if (routes.length === 0) {
     return null;
   }
@@ -46,7 +49,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
       <div className="flex items-center space-x-2 mb-3 sm:mb-4">
         <FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-green-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Résultats des itinéraires</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('routeResults.title')}</h3>
       </div>
 
       <div className="space-y-2 sm:space-y-3">
@@ -101,7 +104,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
 
               {route.duration === Math.min(...routes.map(r => r.duration)) && (
                 <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Plus rapide
+                  {t('routeResults.fastest')}
                 </div>
               )}
             </div>
