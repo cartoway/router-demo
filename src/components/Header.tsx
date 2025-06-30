@@ -18,13 +18,20 @@
 import React from 'react';
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from '../contexts/TranslationContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBug } from '@fortawesome/free-solid-svg-icons';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  isDevMode: boolean;
+  onToggleDevMode: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ isDevMode, onToggleDevMode }) => {
   const { t } = useTranslation();
 
   return (
     <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
             <img src="/favico.svg" alt="Logo" className="h-8 w-auto lg:hidden" />
@@ -35,9 +42,41 @@ export const Header: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <LanguageSelector />
             <div className="text-sm text-gray-500 hidden lg:block">
-              {t('app.poweredBy')}
+              Powered by{' '}
+              <a
+                href="https://cartoway.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Cartoway
+              </a>
+            </div>
+            <LanguageSelector />
+            <div className="hidden lg:flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <FontAwesomeIcon icon={faBug} className={`h-4 w-4 ${isDevMode ? 'text-red-600' : 'text-gray-400'}`} />
+                <span className={`text-sm font-medium ${isDevMode ? 'text-red-700' : 'text-gray-500'}`}>
+                  Dev
+                </span>
+              </div>
+              <button
+                onClick={onToggleDevMode}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isDevMode ? 'bg-red-600' : 'bg-gray-200'
+                }`}
+                title={isDevMode ? 'Disable developer mode' : 'Enable developer mode'}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isDevMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+                <span className="sr-only">
+                  {isDevMode ? 'Disable developer mode' : 'Enable developer mode'}
+                </span>
+              </button>
             </div>
           </div>
         </div>

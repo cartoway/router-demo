@@ -16,7 +16,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { RouterApiService } from '../services/routerApi';
+import { RouterApiService, ApiRequest } from '../services/routerApi';
 import { RoutePoint, RouteResult } from '../types/route';
 import { ROUTE_COLORS } from '../config/transportModes';
 
@@ -32,9 +32,15 @@ export const useRouteCalculation = () => {
   const calculateRoutes = useCallback(async (
     origin: RoutePoint,
     destination: RoutePoint,
-    modes: string[]
+    modes: string[],
+    onRequestLog?: (request: ApiRequest) => void
   ) => {
     if (modes.length === 0) return;
+
+    // Set up request logging if callback provided
+    if (onRequestLog) {
+      routerService.setRequestLogger(onRequestLog);
+    }
 
     calculationStartTime.current = Date.now();
     setIsCalculating(true);
@@ -70,31 +76,7 @@ export const useRouteCalculation = () => {
     } catch (err) {
       console.error('Error calculating routes:', err);
       setError('Erreur lors du calcul des itinéraires. Vérifiez votre connexion.');
-
-      // Fallback: Generate mock routes for demonstration
-      const mockRoutes: RouteResult[] = modes.map(mode => ({
-        mode,
-        duration: Math.floor(Math.random() * 3600) + 600, // 10min to 1h
-        distance: Math.floor(Math.random() * 50000) + 1000, // 1km to 50km
-        color: ROUTE_COLORS[mode] || '#6B7280',
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [origin.lng, origin.lat],
-            [
-              origin.lng + (destination.lng - origin.lng) * 0.3 + (Math.random() - 0.5) * 0.01,
-              origin.lat + (destination.lat - origin.lat) * 0.3 + (Math.random() - 0.5) * 0.01
-            ],
-            [
-              origin.lng + (destination.lng - origin.lng) * 0.7 + (Math.random() - 0.5) * 0.01,
-              origin.lat + (destination.lat - origin.lat) * 0.7 + (Math.random() - 0.5) * 0.01
-            ],
-            [destination.lng, destination.lat],
-          ],
-        },
-      }));
-
-      setRoutes(mockRoutes);
+      setRoutes([]);
     } finally {
       // Ensure minimum display time for smooth UX
       const elapsedTime = Date.now() - (calculationStartTime.current || 0);

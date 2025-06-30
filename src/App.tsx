@@ -21,24 +21,90 @@ import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
 import { Header } from './components/Header';
 import { useRouteCalculation } from './hooks/useRouteCalculation';
-import { useTranslation } from './contexts/TranslationContext';
 import { RoutePoint } from './types/route';
+import { ApiRequest } from './types/api';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBug } from '@fortawesome/free-solid-svg-icons';
 
 function App() {
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
   const [destination, setDestination] = useState<RoutePoint | null>(null);
   const [selectedModes, setSelectedModes] = useState<string[]>(['car', 'cargo_bike']);
   const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [apiRequests, setApiRequests] = useState<ApiRequest[]>([]);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
-  const { t } = useTranslation();
+
+  // Handle API request logging
+  const handleApiRequest = (request: ApiRequest) => {
+    if (isDevMode) {
+      setApiRequests(prev => {
+        // Extract mode from request URL or data
+        const mode = extractModeFromRequest(request);
+
+        // Remove any existing request for this mode
+        const filtered = prev.filter(r => extractModeFromRequest(r) !== mode);
+
+        // Add the new request
+        return [...filtered, request];
+      });
+    }
+  };
+
+  // Extract transport mode from request
+  const extractModeFromRequest = (request: ApiRequest): string | null => {
+    // Try to extract mode from URL
+    const urlMatch = request.url.match(/[?&]mode=([^&]+)/);
+    if (urlMatch) {
+      return urlMatch[1];
+    }
+
+    // Try to extract mode from request data
+    if (request.requestData && typeof request.requestData === 'object') {
+      const data = request.requestData as Record<string, unknown>;
+      if (data.mode && typeof data.mode === 'string') {
+        return data.mode;
+      }
+    }
+
+    return null;
+  };
+
+  // Filter API requests to only show selected modes
+  const filteredApiRequests = apiRequests.filter(request => {
+    const mode = extractModeFromRequest(request);
+    return mode && selectedModes.includes(mode);
+  });
+
+  // Toggle dev mode
+  const toggleDevMode = () => {
+    setIsDevMode(!isDevMode);
+  };
+
+  // Clear API requests
+  const clearApiRequests = () => {
+    setApiRequests([]);
+  };
+
+  // Export API requests
+  const exportApiRequests = () => {
+    const dataStr = JSON.stringify(filteredApiRequests, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `api-requests-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Auto-calculate routes when both points are set and modes are selected
   useEffect(() => {
     if (origin && destination) {
       if (selectedModes.length > 0) {
         // Calculate routes if modes are selected
-        calculateRoutes(origin, destination, selectedModes);
+        calculateRoutes(origin, destination, selectedModes, handleApiRequest);
         setVisibleRoutes(selectedModes);
       } else {
         // Clear routes if no modes are selected
@@ -84,9 +150,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Header />
+      <Header isDevMode={isDevMode} onToggleDevMode={toggleDevMode} />
       {/* Main Content */}
-      <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6">
+      <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6 pb-20 lg:pb-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4">
 
           {/* Left Sidebar - Controls */}
@@ -116,13 +182,15 @@ function App() {
 
           {/* Right Sidebar - Results */}
           <div className="lg:col-span-3 space-y-6 order-3 p-4 lg:p-0">
-            {routes.length > 0 && (
-              <RouteResults
-                routes={routes}
-                visibleRoutes={visibleRoutes}
-                onToggleRouteVisibility={handleToggleRouteVisibility}
-              />
-            )}
+            <RouteResults
+              routes={routes}
+              visibleRoutes={visibleRoutes}
+              onToggleRouteVisibility={handleToggleRouteVisibility}
+              isDevMode={isDevMode}
+              apiRequests={filteredApiRequests}
+              onClearApiRequests={clearApiRequests}
+              onExportApiRequests={exportApiRequests}
+            />
           </div>
         </div>
 
@@ -135,10 +203,44 @@ function App() {
       </div>
 
       {/* Footer - Mobile only */}
-      <footer className="lg:hidden bg-white border-t py-4">
+      <footer className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t py-4 z-10">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-sm text-gray-500">
-            {t('app.poweredBy')}
+          <div className="flex items-center justify-between">
+            <div className="text-center text-sm text-gray-500">
+              Powered by{' '}
+              <a
+                href="https://cartoway.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Cartoway
+              </a>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <FontAwesomeIcon icon={faBug} className={`h-4 w-4 ${isDevMode ? 'text-red-600' : 'text-gray-400'}`} />
+                <span className={`text-sm font-medium ${isDevMode ? 'text-red-700' : 'text-gray-500'}`}>
+                  Dev
+                </span>
+              </div>
+              <button
+                onClick={toggleDevMode}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isDevMode ? 'bg-red-600' : 'bg-gray-200'
+                }`}
+                title={isDevMode ? 'Disable developer mode' : 'Enable developer mode'}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isDevMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+                <span className="sr-only">
+                  {isDevMode ? 'Disable developer mode' : 'Enable developer mode'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </footer>

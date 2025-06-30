@@ -20,11 +20,34 @@ import polyline from '@mapbox/polyline';
 
 const ROUTER_BASE_URL = import.meta.env.ROUTER_API_URL || 'https://router.cartoway.com';
 
+export interface ApiRequest {
+  id: string;
+  timestamp: Date;
+  method: string;
+  url: string;
+  requestData?: Record<string, unknown>;
+  responseData?: Record<string, unknown>;
+  status: 'pending' | 'success' | 'error';
+  duration?: number;
+  error?: string;
+}
+
 export class RouterApiService {
   private apiKey: string;
+  private onRequestLog?: (request: ApiRequest) => void;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || import.meta.env.ROUTER_API_KEY || 'demo';
+  }
+
+  setRequestLogger(callback: (request: ApiRequest) => void) {
+    this.onRequestLog = callback;
+  }
+
+  private logRequest(request: ApiRequest) {
+    if (this.onRequestLog) {
+      this.onRequestLog(request);
+    }
   }
 
   async calculateRoute(
@@ -43,8 +66,27 @@ export class RouterApiService {
       precision: '6'
     });
 
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
+    const url = `${ROUTER_BASE_URL}/0.1/routes?${params}`;
+
+    // Log request start
+    const request: ApiRequest = {
+      id: requestId,
+      timestamp: new Date(),
+      method: 'GET',
+      url,
+      requestData: {
+        origin,
+        destination,
+        options,
+        params: Object.fromEntries(params.entries())
+      },
+      status: 'pending'
+    };
+    this.logRequest(request);
+
     try {
-      const url = `${ROUTER_BASE_URL}/0.1/routes?${params}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -52,15 +94,40 @@ export class RouterApiService {
         },
       });
 
+      const duration = Date.now() - startTime;
+
       if (!response.ok) {
+        const errorRequest: ApiRequest = {
+          ...request,
+          status: 'error',
+          duration,
+          error: `HTTP error! status: ${response.status}`
+        };
+        this.logRequest(errorRequest);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Router API response:', data);
+
+      // Log successful request
+      const successRequest: ApiRequest = {
+        ...request,
+        status: 'success',
+        duration,
+        responseData: data
+      };
+      this.logRequest(successRequest);
+
       return data;
     } catch (error) {
-      console.error('Error calling Router API:', error);
+      const duration = Date.now() - startTime;
+      const errorRequest: ApiRequest = {
+        ...request,
+        status: 'error',
+        duration,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+      this.logRequest(errorRequest);
       throw error;
     }
   }

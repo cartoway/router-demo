@@ -18,7 +18,6 @@
 import {
   faCar,
   faPersonBiking,
-  faPersonWalking,
   faMotorcycle,
   faTruck,
   faVanShuttle,
@@ -34,7 +33,6 @@ export interface TransportMode {
 export const TRANSPORT_MODES: TransportMode[] = [
   { id: 'car', icon: faCar, color: '#2563EB' },
   { id: 'cargo_bike', icon: faPersonBiking, color: '#059669' },
-  { id: 'pedestrian', icon: faPersonWalking, color: '#000000' },
   { id: 'scooter', icon: faMotorcycle, color: '#8B5CF6' },
   { id: 'van', icon: faVanShuttle, color: '#FCC419' },
   { id: 'truck_19', icon: faTruck, color: '#DC2626' },
