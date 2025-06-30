@@ -32,7 +32,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-3 sm:space-y-3">
       <div className="flex items-center space-x-2">
         <FontAwesomeIcon icon={faLocationDot} className="h-5 w-5 text-blue-600" />
         <h2 className="text-lg font-semibold text-gray-900">{t('routeControls.title')}</h2>
@@ -108,27 +108,23 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
         </div>
       </div>
 
-      {/* Status and Clear Button */}
-      <div className="space-y-2 sm:space-y-3">
-        <div
-          className={`flex items-center justify-center bg-blue-50 rounded-lg transition-all duration-300 ease-in-out overflow-hidden ${
-            isCalculating
-              ? 'opacity-100 max-h-20 py-2 sm:py-3 px-2 sm:px-3 transform translate-y-0'
-              : 'opacity-0 max-h-0 py-0 px-2 sm:px-3 transform -translate-y-2 pointer-events-none'
-          }`}
-        >
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-          <span className="text-sm text-blue-700 font-medium">{t('routeControls.status.calculating')}</span>
-        </div>
-
-        {origin && destination && selectedModes.length === 0 && (
-          <div className="flex items-center justify-center p-2 sm:p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <span className="text-sm text-yellow-700 font-medium">
-              {t('routeControls.transportModes.selectMode')}
-            </span>
-          </div>
-        )}
+      {/* Status*/}
+      { isCalculating && (
+      <div className="flex items-center justify-center bg-blue-50 rounded-lg transition-all duration-300 ease-in-out overflow-hidden opacity-100 max-h-20 py-2 sm:py-3 px-2 sm:px-3 transform translate-y-0"
+      >
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+        <span className="text-sm text-blue-700 font-medium">{t('routeControls.status.calculating')}</span>
       </div>
+      )}
+
+      {/* Mode Selection Warning */}
+      {origin && destination && selectedModes.length === 0 && (
+        <div className={`flex items-center justify-center p-2 sm:p-3 bg-yellow-50 rounded-lg border border-yellow-200 ${isCalculating ? 'mt-2 sm:mt-3' : ''}`}>
+          <span className="text-sm text-yellow-700 font-medium">
+            {t('routeControls.transportModes.selectMode')}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
