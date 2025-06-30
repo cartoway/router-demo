@@ -3,6 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Multi-modal router demo",
+  "author": "Gwénaël RAult <gwenael@cartoway.com>",
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cartoway/router-demo.git"
+  },
+  "homepage": "https://github.com/cartoway/router-demo#readme",
+  "bugs": {
+    "url": "https://github.com/cartoway/router-demo/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
