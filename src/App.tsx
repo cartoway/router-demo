@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapComponent } from './components/MapComponent';
 import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
@@ -33,6 +33,10 @@ function App() {
   const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
   const [isDevMode, setIsDevMode] = useState(false);
   const [apiRequests, setApiRequests] = useState<ApiRequest[]>([]);
+
+  // Refs to track previous points
+  const prevOrigin = useRef<RoutePoint | null>(null);
+  const prevDestination = useRef<RoutePoint | null>(null);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
 
@@ -103,16 +107,42 @@ function App() {
   useEffect(() => {
     if (origin && destination) {
       if (selectedModes.length > 0) {
-        // Calculate routes if modes are selected
-        calculateRoutes(origin, destination, selectedModes, handleApiRequest);
+        // Check if points have changed
+        const pointsChanged =
+          prevOrigin.current?.lat !== origin.lat ||
+          prevOrigin.current?.lng !== origin.lng ||
+          prevDestination.current?.lat !== destination.lat ||
+          prevDestination.current?.lng !== destination.lng;
+
+        // Get existing route modes
+        const existingModes = routes.map(route => route.mode);
+
+        if (pointsChanged) {
+          // Recalculate all routes when points change
+          calculateRoutes(origin, destination, selectedModes, handleApiRequest);
+        } else {
+          // Find new modes that need to be calculated
+          const newModes = selectedModes.filter(mode => !existingModes.includes(mode));
+
+          if (newModes.length > 0) {
+            // Calculate only new routes
+            calculateRoutes(origin, destination, newModes, handleApiRequest);
+          }
+        }
+
+        // Update visible routes to include all selected modes
         setVisibleRoutes(selectedModes);
+
+        // Update refs
+        prevOrigin.current = origin;
+        prevDestination.current = destination;
       } else {
         // Clear routes if no modes are selected
         clearRoutes();
         setVisibleRoutes([]);
       }
     }
-  }, [origin, destination, selectedModes, calculateRoutes, clearRoutes]);
+  }, [origin, destination, selectedModes, calculateRoutes, clearRoutes, routes]);
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {

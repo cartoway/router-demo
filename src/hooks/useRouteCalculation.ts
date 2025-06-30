@@ -68,7 +68,13 @@ export const useRouteCalculation = () => {
         }
       });
 
-      setRoutes(routeResults);
+      // Add new routes to existing ones instead of replacing
+      setRoutes(prevRoutes => {
+        // Remove any existing routes for the modes being calculated
+        const filteredRoutes = prevRoutes.filter(route => !modes.includes(route.mode));
+        // Add new routes
+        return [...filteredRoutes, ...routeResults];
+      });
 
       if (routeResults.length === 0) {
         setError('Aucun itinéraire trouvé pour les modes sélectionnés');
