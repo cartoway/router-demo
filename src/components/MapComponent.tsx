@@ -299,6 +299,22 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             },
           });
 
+          // Add outline layer first (background)
+          map.current!.addLayer({
+            id: `${layerId}-outline`,
+            type: 'line',
+            source: layerId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+            paint: {
+              'line-color': '#ffffff',
+              'line-width': 8,
+              'line-opacity': 0.9,
+            },
+          });
+
           map.current!.addLayer({
             id: layerId,
             type: 'line',
@@ -309,8 +325,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             },
             paint: {
               'line-color': route.color,
-              'line-width': 4,
-              'line-opacity': 0.8,
+              'line-width': 6,
+              'line-opacity': 0.9,
             },
           });
         }
