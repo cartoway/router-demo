@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { RouterApiService } from '../services/routerApi';
 import { RoutePoint, RouteResult } from '../types/route';
 import { ROUTE_COLORS } from '../config/transportModes';
@@ -7,6 +7,8 @@ export const useRouteCalculation = () => {
   const [routes, setRoutes] = useState<RouteResult[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const calculationStartTime = useRef<number | null>(null);
+  const minCalculationTime = 800; // Minimum 800ms to show loading state
 
   const routerService = new RouterApiService();
 
@@ -17,6 +19,7 @@ export const useRouteCalculation = () => {
   ) => {
     if (modes.length === 0) return;
 
+    calculationStartTime.current = Date.now();
     setIsCalculating(true);
     setError(null);
 
@@ -76,7 +79,13 @@ export const useRouteCalculation = () => {
 
       setRoutes(mockRoutes);
     } finally {
-      setIsCalculating(false);
+      // Ensure minimum display time for smooth UX
+      const elapsedTime = Date.now() - (calculationStartTime.current || 0);
+      const remainingTime = Math.max(0, minCalculationTime - elapsedTime);
+
+      setTimeout(() => {
+        setIsCalculating(false);
+      }, remainingTime);
     }
   }, []);
 

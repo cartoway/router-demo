@@ -110,12 +110,16 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
 
       {/* Status and Clear Button */}
       <div className="space-y-2 sm:space-y-3">
-        {isCalculating && (
-          <div className="flex items-center justify-center p-2 sm:p-3 bg-blue-50 rounded-lg">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            <span className="text-sm text-blue-700 font-medium">{t('routeControls.status.calculating')}</span>
-          </div>
-        )}
+        <div
+          className={`flex items-center justify-center bg-blue-50 rounded-lg transition-all duration-300 ease-in-out overflow-hidden ${
+            isCalculating
+              ? 'opacity-100 max-h-20 py-2 sm:py-3 px-2 sm:px-3 transform translate-y-0'
+              : 'opacity-0 max-h-0 py-0 px-2 sm:px-3 transform -translate-y-2 pointer-events-none'
+          }`}
+        >
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+          <span className="text-sm text-blue-700 font-medium">{t('routeControls.status.calculating')}</span>
+        </div>
 
         {origin && destination && selectedModes.length === 0 && (
           <div className="flex items-center justify-center p-2 sm:p-3 bg-yellow-50 rounded-lg border border-yellow-200">
