@@ -22,7 +22,7 @@ import {
   faXmark
 } from '@fortawesome/free-solid-svg-icons';
 import { RoutePoint } from '../types/route';
-import { TRANSPORT_MODES } from '../config/transportModes';
+import { TRANSPORT_MODES, getModeLabel } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 
 interface RouteControlsProps {
@@ -108,7 +108,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-2 sm:mb-3">{t('routeControls.transportModes.title')}</h3>
         <div className="grid grid-cols-2 gap-2">
-          {TRANSPORT_MODES.map(({ id, label, icon: Icon, color }) => (
+          {TRANSPORT_MODES.map(({ id, icon: Icon, color }) => (
             <button
               key={id}
               onClick={() => onModeToggle(id)}
@@ -119,7 +119,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
               }`}
             >
               <FontAwesomeIcon icon={Icon} className="h-3 w-3 sm:h-4 sm:w-4" style={{ color: selectedModes.includes(id) ? color : undefined }} />
-              <span className="text-xs sm:text-sm font-medium">{label}</span>
+              <span className="text-xs sm:text-sm font-medium">{getModeLabel(id, t)}</span>
             </button>
           ))}
         </div>

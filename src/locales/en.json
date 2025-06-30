@@ -42,5 +42,13 @@
       "origin": "Origin",
       "destination": "Destination"
     }
+  },
+  "transportModes": {
+    "car": "Car",
+    "cargo_bike": "Cargo bike",
+    "pedestrian": "Pedestrian",
+    "scooter": "Scooter",
+    "van": "Van",
+    "truck_19": "Truck <19t"
   }
 }

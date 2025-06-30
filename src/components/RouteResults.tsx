@@ -89,7 +89,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                     style={{ backgroundColor: route.color }}
                   />
                   <span className="font-medium text-gray-900 text-sm sm:text-base">
-                    {getModeLabel(route.mode)}
+                    {getModeLabel(route.mode, t)}
                   </span>
                 </div>
                 <button

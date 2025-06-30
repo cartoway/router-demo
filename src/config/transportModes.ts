@@ -17,24 +17,27 @@
 
 import {
   faCar,
-  faBicycle,
+  faPersonBiking,
   faPersonWalking,
+  faMotorcycle,
   faTruck,
+  faVanShuttle,
 } from '@fortawesome/free-solid-svg-icons';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
 export interface TransportMode {
   id: string;
-  label: string;
   icon: IconDefinition;
   color: string;
 }
 
 export const TRANSPORT_MODES: TransportMode[] = [
-  { id: 'car', label: 'Voiture', icon: faCar, color: '#2563EB' },
-  { id: 'bicycle', label: 'Vélo', icon: faBicycle, color: '#059669' },
-  { id: 'scooter', label: 'Scooter', icon: faPersonWalking, color: '#DC2626' },
-  { id: 'truck_19', label: 'Camion <19t', icon: faTruck, color: '#8B5CF6' }
+  { id: 'car', icon: faCar, color: '#2563EB' },
+  { id: 'cargo_bike', icon: faPersonBiking, color: '#059669' },
+  { id: 'pedestrian', icon: faPersonWalking, color: '#000000' },
+  { id: 'scooter', icon: faMotorcycle, color: '#8B5CF6' },
+  { id: 'van', icon: faVanShuttle, color: '#FCC419' },
+  { id: 'truck_19', icon: faTruck, color: '#DC2626' },
 ];
 
 // Create a map for quick lookup
@@ -50,8 +53,11 @@ export const ROUTE_COLORS: Record<string, string> = TRANSPORT_MODES.reduce((acc,
 }, {} as Record<string, string>);
 
 // Helper functions
-export const getModeLabel = (modeId: string): string => {
-  return TRANSPORT_MODES_MAP[modeId]?.label || modeId;
+export const getModeLabel = (modeId: string, t?: (key: string) => string): string => {
+  if (t) {
+    return t(`transportModes.${modeId}`) || modeId;
+  }
+  return modeId;
 };
 
 export const getModeColor = (modeId: string): string => {

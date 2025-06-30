@@ -27,7 +27,7 @@ import { RoutePoint } from './types/route';
 function App() {
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
   const [destination, setDestination] = useState<RoutePoint | null>(null);
-  const [selectedModes, setSelectedModes] = useState<string[]>(['car', 'bicycle']);
+  const [selectedModes, setSelectedModes] = useState<string[]>(['car', 'cargo_bike']);
   const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
