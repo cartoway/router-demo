@@ -114,6 +114,9 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
       curlCommand += ` -d '${JSON.stringify(request.requestData)}'`;
     }
 
+    // Replace api_key with {{api_key}} for Postman variable
+    curlCommand = curlCommand.replace(/api_key=([^&]+)/g, 'api_key={{api_key}}');
+
     // Copy to clipboard
     navigator.clipboard.writeText(curlCommand).then(() => {
       // You could add a toast notification here
