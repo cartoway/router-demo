@@ -1,9 +1,9 @@
 import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature } from '../types/route';
 import polyline from '@mapbox/polyline';
 
-const CARTOWAY_BASE_URL = 'https://router.cartoway.com';
+const ROUTER_BASE_URL = import.meta.env.ROUTER_API_URL || 'https://router.cartoway.com';
 
-export class CartowayApiService {
+export class RouterApiService {
   private apiKey: string;
 
   constructor(apiKey?: string) {
@@ -27,7 +27,7 @@ export class CartowayApiService {
     });
 
     try {
-      const url = `${CARTOWAY_BASE_URL}/0.1/routes?${params}`;
+      const url = `${ROUTER_BASE_URL}/0.1/routes?${params}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -40,10 +40,10 @@ export class CartowayApiService {
       }
 
       const data = await response.json();
-      console.log('Cartoway API response:', data);
+      console.log('Router API response:', data);
       return data;
     } catch (error) {
-      console.error('Error calling Cartoway API:', error);
+      console.error('Error calling Router API:', error);
       throw error;
     }
   }
@@ -64,7 +64,7 @@ export class CartowayApiService {
 
       // @mapbox/polyline returns [lat, lng] format, convert to [lng, lat] for GeoJSON
       // But we still need to validate and fix invalid coordinates
-      const coordinates: [number, number][] = decodedCoordinates.map((coord, index) => {
+      const coordinates: [number, number][] = decodedCoordinates.map((coord) => {
         let [lat, lng] = coord;
 
         // TODO: Investigate why we need to divide by 10
@@ -83,8 +83,7 @@ export class CartowayApiService {
           type: 'LineString',
         },
       };
-    } catch (error) {
-
+    } catch {
       // Fallback: return empty geometry
       return {
         mode,

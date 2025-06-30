@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
+import { RouterApiService } from '../services/routerApi';
 import { RoutePoint, RouteResult } from '../types/route';
-import { CartowayApiService } from '../services/cartowayApi';
 import { ROUTE_COLORS } from '../config/transportModes';
 
 export const useRouteCalculation = () => {
@@ -8,7 +8,7 @@ export const useRouteCalculation = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const cartowayService = new CartowayApiService();
+  const routerService = new RouterApiService();
 
   const calculateRoutes = useCallback(async (
     origin: RoutePoint,
@@ -21,7 +21,7 @@ export const useRouteCalculation = () => {
     setError(null);
 
     try {
-      const results = await cartowayService.calculateMultipleRoutes(origin, destination, modes);
+      const results = await routerService.calculateMultipleRoutes(origin, destination, modes);
 
       const routeResults: RouteResult[] = [];
 
@@ -32,8 +32,8 @@ export const useRouteCalculation = () => {
         if (result.features && result.features.length > 0) {
           const feature = result.features[0]; // Take the first feature
 
-          // Convert Cartoway feature to RouteResult format
-          const routeResult = cartowayService.convertToRouteResult(feature, mode);
+          // Convert RouterApi feature to RouteResult format
+          const routeResult = routerService.convertToRouteResult(feature, mode);
 
           routeResults.push({
             ...routeResult,
