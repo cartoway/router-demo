@@ -70,10 +70,10 @@ function App() {
       <Header />
       {/* Main Content */}
       <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4 h-[calc(100vh-112px)] lg:h-[calc(100vh-140px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4">
 
           {/* Left Sidebar - Controls */}
-          <div className="lg:col-span-3 space-y-6 overflow-y-auto max-h-full order-2 lg:order-1 p-4 lg:p-0">
+          <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 p-4 lg:p-0">
             <RouteControls
               origin={origin}
               destination={destination}
@@ -86,7 +86,7 @@ function App() {
 
           {/* Main Map Area */}
           <div className="lg:col-span-6 order-1 lg:order-2">
-            <div className="h-96 lg:h-full">
+            <div className="h-96 lg:h-[calc(100vh-200px)]">
               <MapComponent
                 onPointSelect={handlePointSelect}
                 origin={origin}
@@ -98,7 +98,7 @@ function App() {
           </div>
 
           {/* Right Sidebar - Results */}
-          <div className="lg:col-span-3 space-y-6 overflow-y-auto max-h-full order-3 p-4 lg:p-0">
+          <div className="lg:col-span-3 space-y-6 order-3 p-4 lg:p-0">
             {routes.length > 0 && (
               <RouteResults
                 routes={routes}

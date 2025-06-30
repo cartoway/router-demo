@@ -39,55 +39,51 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
       </div>
 
       {/* Origin & Destination Status */}
-      <div className="space-y-2 sm:space-y-3">
-        <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700">{t('routeControls.origin.label')}</span>
-            <div className="flex items-center space-x-2">
-              <span className={`text-sm ${origin ? 'text-green-600' : 'text-gray-400'}`}>
-                {origin ? t('routeControls.origin.defined') : t('routeControls.origin.notDefined')}
-              </span>
-              {origin && (
-                <button
-                  onClick={() => onPointSelect(null, 'origin')}
-                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title={t('routeControls.origin.removeTooltip')}
-                >
-                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                </button>
-              )}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
+          <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between min-w-0">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white flex-shrink-0"></div>
+                <div className="text-sm text-gray-500 truncate flex-1">
+                  {origin ? formatCoordinates(origin) : t('routeControls.origin.label')}
+                </div>
+              </div>
+              <button
+                onClick={() => onPointSelect(null, 'origin')}
+                className={`p-1 rounded transition-colors flex-shrink-0 ml-2 ${
+                  origin
+                    ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                    : 'text-transparent pointer-events-none'
+                }`}
+                title={t('routeControls.origin.removeTooltip')}
+              >
+                <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+              </button>
             </div>
           </div>
-          {origin && (
-            <div className="text-xs text-gray-500 font-mono">
-              {formatCoordinates(origin)}
-            </div>
-          )}
-        </div>
 
-        <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700">{t('routeControls.destination.label')}</span>
-            <div className="flex items-center space-x-2">
-              <span className={`text-sm ${destination ? 'text-green-600' : 'text-gray-400'}`}>
-                {destination ? t('routeControls.destination.defined') : t('routeControls.destination.notDefined')}
-              </span>
-              {destination && (
-                <button
-                  onClick={() => onPointSelect(null, 'destination')}
-                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title={t('routeControls.destination.removeTooltip')}
-                >
-                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                </button>
-              )}
+          <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between min-w-0">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-white flex-shrink-0"></div>
+                <div className="text-sm text-gray-500 truncate flex-1">
+                  {destination ? formatCoordinates(destination) : t('routeControls.destination.label')}
+                </div>
+              </div>
+              <button
+                onClick={() => onPointSelect(null, 'destination')}
+                className={`p-1 rounded transition-colors flex-shrink-0 ml-2 ${
+                  destination
+                    ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                    : 'text-transparent pointer-events-none'
+                }`}
+                title={t('routeControls.destination.removeTooltip')}
+              >
+                <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+              </button>
             </div>
           </div>
-          {destination && (
-            <div className="text-xs text-gray-500 font-mono">
-              {formatCoordinates(destination)}
-            </div>
-          )}
         </div>
       </div>
 
