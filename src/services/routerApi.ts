@@ -144,16 +144,12 @@ export class RouterApiService {
   } {
     try {
       // Decode polyline to coordinates using @mapbox/polyline
-      const decodedCoordinates = polyline.decode(feature.geometry.polylines);
+      const decodedCoordinates = polyline.decode(feature.geometry.polylines, 6);
 
       // @mapbox/polyline returns [lat, lng] format, convert to [lng, lat] for GeoJSON
       // But we still need to validate and fix invalid coordinates
       const coordinates: [number, number][] = decodedCoordinates.map((coord) => {
-        let [lat, lng] = coord;
-
-        // TODO: Investigate why we need to divide by 10
-        lat = lat / 10;
-        lng = lng / 10;
+        const [lat, lng] = coord;
 
         return [lng, lat]; // Convert to [lng, lat] for GeoJSON
       });
