@@ -20,7 +20,7 @@ export interface ApiRequest {
   id: string;
   method: string;
   url: string;
-  status: 'pending' | 'success' | 'error';
+  status: 'pending' | 'success' | 'error' | 'rejected';
   timestamp: Date;
   duration?: number;
   requestData?: Record<string, unknown>;

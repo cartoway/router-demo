@@ -50,7 +50,14 @@
     "pedestrian": "Piéton",
     "scooter": "Scooter",
     "van": "Fourgon",
-    "truck_19": "Camion <19t"
+    "truck_19": "Camion <19t",
+    "truck_75": "Camion <7,5t",
+    "truck_12": "Camion <12t",
+    "truck_26": "Camion <26t",
+    "truck_32": "Camion <32t",
+    "truck_44": "Camion <44t",
+    "bicycle": "Vélo",
+    "foot": "À pied"
   },
   "errors": {
     "requestError": "Erreur de requête",

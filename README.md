@@ -46,8 +46,10 @@ docker run -d \
 ## Environment Variables
 
 - `NODE_ENV`: Environment (development/production)
-- `ROUTER_API_URL`: Router API base URL (defaults to https://router.cartoway.com)
-- `ROUTER_API_KEY`: Router API key (defaults to 'demo')
+- `VITE_ROUTER_API_URL`: Router API base URL (defaults to https://router.cartoway.com)
+- `VITE_ROUTER_API_KEY`: Router API key (defaults to 'demo')
+- `VITE_ENABLED_TRANSPORT_MODES`: A comma-separated list of transport modes to be displayed in the interface, controlling the available options for selection. The following modes are available: `car`, `cargo_bike`, `scooter`, `van`, `truck_19`, `truck_75`, `truck_12`, `truck_26`, `truck_32`, `truck_44`, `bicycle`, `foot`. The default value is `car,cargo_bike,scooter,van,truck_19`. For a complete list of modes, refer to the Router API at https://router.cartoway.com/0.1/capability.
+- `VITE_ACTIVE_TRANSPORT_MODES`: Comma-separated list of transport modes to pre-select when the application starts. These modes will be automatically selected in the interface. Must be a subset of `VITE_ENABLED_TRANSPORT_MODES`. Default: `car,cargo_bike`
 
 ## Health Check
 

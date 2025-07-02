@@ -50,7 +50,14 @@
     "pedestrian": "Pedestrian",
     "scooter": "Scooter",
     "van": "Van",
-    "truck_19": "Truck <19t"
+    "truck_19": "Truck <19t",
+    "truck_75": "Truck <7.5t",
+    "truck_12": "Truck <12t",
+    "truck_26": "Truck <26t",
+    "truck_32": "Truck <32t",
+    "truck_44": "Truck <44t",
+    "bicycle": "Bicycle",
+    "foot": "Foot"
   },
   "errors": {
     "requestError": "Request Error",

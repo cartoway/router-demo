@@ -16,21 +16,12 @@
  */
 
 import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature } from '../types/route';
+import { ApiRequest } from '../types/api';
 import polyline from '@mapbox/polyline';
 
-const ROUTER_BASE_URL = import.meta.env.ROUTER_API_URL || 'https://router.cartoway.com';
+const ROUTER_BASE_URL = import.meta.env.VITE_ROUTER_API_URL || 'https://router.cartoway.com';
 
-export interface ApiRequest {
-  id: string;
-  timestamp: Date;
-  method: string;
-  url: string;
-  requestData?: Record<string, unknown>;
-  responseData?: Record<string, unknown>;
-  status: 'pending' | 'success' | 'error' | 'rejected';
-  duration?: number;
-  error?: string;
-}
+
 
 interface HttpError extends Error {
   isHttpError: true;
@@ -42,7 +33,7 @@ export class RouterApiService {
   private translate?: (key: string) => string;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || import.meta.env.ROUTER_API_KEY || 'demo';
+    this.apiKey = apiKey || import.meta.env.VITE_ROUTER_API_KEY || 'demo';
   }
 
   setRequestLogger(callback: (request: ApiRequest) => void) {

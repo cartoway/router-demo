@@ -25,11 +25,19 @@ import { RoutePoint, RouteResult } from './types/route';
 import { ApiRequest } from './types/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBug } from '@fortawesome/free-solid-svg-icons';
+import { ENABLED_TRANSPORT_MODES, TransportMode, ACTIVE_TRANSPORT_MODES } from './config/transportModes';
 
 function App() {
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
   const [destination, setDestination] = useState<RoutePoint | null>(null);
-  const [selectedModes, setSelectedModes] = useState<string[]>(['car', 'cargo_bike']);
+  const [selectedModes, setSelectedModes] = useState<string[]>(() => {
+    // Initialize with ACTIVE_TRANSPORT_MODES, or default to first 2 enabled modes
+    if (ACTIVE_TRANSPORT_MODES.length > 0) {
+      return ACTIVE_TRANSPORT_MODES;
+    }
+    const enabledModeIds = ENABLED_TRANSPORT_MODES.map((mode: TransportMode) => mode.id);
+    return enabledModeIds.length >= 2 ? enabledModeIds.slice(0, 2) : ['car', 'cargo_bike'];
+  });
   const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
   const [isDevMode, setIsDevMode] = useState(false);
   const [apiRequests, setApiRequests] = useState<ApiRequest[]>([]);
