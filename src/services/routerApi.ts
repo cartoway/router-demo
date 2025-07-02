@@ -27,14 +27,19 @@ export interface ApiRequest {
   url: string;
   requestData?: Record<string, unknown>;
   responseData?: Record<string, unknown>;
-  status: 'pending' | 'success' | 'error';
+  status: 'pending' | 'success' | 'error' | 'rejected';
   duration?: number;
   error?: string;
+}
+
+interface HttpError extends Error {
+  isHttpError: true;
 }
 
 export class RouterApiService {
   private apiKey: string;
   private onRequestLog?: (request: ApiRequest) => void;
+  private translate?: (key: string) => string;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || import.meta.env.ROUTER_API_KEY || 'demo';
@@ -44,10 +49,33 @@ export class RouterApiService {
     this.onRequestLog = callback;
   }
 
+  setTranslator(translate: (key: string) => string) {
+    this.translate = translate;
+  }
+
   private logRequest(request: ApiRequest) {
     if (this.onRequestLog) {
       this.onRequestLog(request);
     }
+  }
+
+  private getDocumentedErrorMessage(status: number): string {
+    const errorMessages: Record<number, string> = {
+      204: 'http204',
+      400: 'http400',
+      401: 'http401',
+      404: 'http404',
+      405: 'http405',
+      417: 'http417',
+      500: 'http500'
+    };
+
+    const errorKey = errorMessages[status];
+    if (errorKey && this.translate) {
+      return this.translate(`errors.${errorKey}`);
+    }
+
+    return `HTTP error! status: ${status}`;
   }
 
   async calculateRoute(
@@ -55,6 +83,7 @@ export class RouterApiService {
     destination: RoutePoint,
     options: RouteOptions
   ): Promise<CartowayResponse> {
+
     // Format coordinates as: lat1,lng1,lat2,lng2
     const locs = `${origin.lat},${origin.lng},${destination.lat},${destination.lng}`;
 
@@ -97,14 +126,20 @@ export class RouterApiService {
       const duration = Date.now() - startTime;
 
       if (!response.ok) {
+        const errorMessage = this.getDocumentedErrorMessage(response.status);
+
         const errorRequest: ApiRequest = {
           ...request,
-          status: 'error',
+          status: 'rejected',
           duration,
-          error: `HTTP error! status: ${response.status}`
+          error: errorMessage
         };
         this.logRequest(errorRequest);
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+        // Create a custom error with a flag to identify it as our HTTP error
+        const httpError = new Error(errorMessage) as HttpError;
+        httpError.isHttpError = true;
+        throw httpError;
       }
 
       const data = await response.json();
@@ -120,6 +155,11 @@ export class RouterApiService {
 
       return data;
     } catch (error) {
+      if (error instanceof Error && (error as HttpError).isHttpError) {
+        throw error;
+      }
+
+
       const duration = Date.now() - startTime;
       const errorRequest: ApiRequest = {
         ...request,
@@ -189,16 +229,26 @@ export class RouterApiService {
       })
     );
 
-    try {
-      const results = await Promise.allSettled(promises);
-      return results
-        .filter((result): result is PromiseFulfilledResult<CartowayResponse> =>
-          result.status === 'fulfilled'
-        )
-        .map(result => result.value);
-    } catch (error) {
-      console.error('Error calculating multiple routes:', error);
-      throw error;
+    const results = await Promise.allSettled(promises);
+    const successfulResults = results
+      .filter((result): result is PromiseFulfilledResult<CartowayResponse> =>
+        result.status === 'fulfilled'
+      )
+      .map(result => result.value);
+
+    // If all requests failed, throw an error
+    if (successfulResults.length === 0 && results.length > 0) {
+      const firstError = results.find(result => result.status === 'rejected');
+      if (firstError && firstError.status === 'rejected') {
+        // Extract the error message from the Error object
+        const errorMessage = firstError.reason instanceof Error
+          ? firstError.reason.message
+          : String(firstError.reason);
+        throw new Error(errorMessage);
+      }
+      throw new Error(this.translate ? this.translate('errors.allRoutesFailed') : 'All route calculations failed');
     }
+
+    return successfulResults;
   }
 }

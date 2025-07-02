@@ -102,6 +102,8 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
     }
   };
 
+
+
   const copyRequestToClipboard = (request: ApiRequest) => {
     // Create a cURL command that can be imported into Postman
     let curlCommand = `curl -X ${request.method.toUpperCase()} "${request.url}"`;
@@ -290,11 +292,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                     </div>
                   </div>
 
-                  {request.error && (
-                    <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                      <strong>Error:</strong> {request.error}
-                    </div>
-                  )}
+
 
                   {/* Show request data only if not in URL and method is not GET */}
                   {request.requestData &&

@@ -21,7 +21,7 @@ import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
 import { Header } from './components/Header';
 import { useRouteCalculation } from './hooks/useRouteCalculation';
-import { RoutePoint } from './types/route';
+import { RoutePoint, RouteResult } from './types/route';
 import { ApiRequest } from './types/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBug } from '@fortawesome/free-solid-svg-icons';
@@ -34,9 +34,10 @@ function App() {
   const [isDevMode, setIsDevMode] = useState(false);
   const [apiRequests, setApiRequests] = useState<ApiRequest[]>([]);
 
-  // Refs to track previous points
+  // Refs to track previous points and routes
   const prevOrigin = useRef<RoutePoint | null>(null);
   const prevDestination = useRef<RoutePoint | null>(null);
+  const prevRoutes = useRef<RouteResult[]>([]);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
 
@@ -114,14 +115,12 @@ function App() {
           prevDestination.current?.lat !== destination.lat ||
           prevDestination.current?.lng !== destination.lng;
 
-        // Get existing route modes
-        const existingModes = routes.map(route => route.mode);
-
         if (pointsChanged) {
           // Recalculate all routes when points change
           calculateRoutes(origin, destination, selectedModes, handleApiRequest);
         } else {
-          // Find new modes that need to be calculated
+          // Check if we need to calculate new modes
+          const existingModes = prevRoutes.current.map(route => route.mode);
           const newModes = selectedModes.filter(mode => !existingModes.includes(mode));
 
           if (newModes.length > 0) {
@@ -129,6 +128,9 @@ function App() {
             calculateRoutes(origin, destination, newModes, handleApiRequest);
           }
         }
+
+        // Update prevRoutes ref
+        prevRoutes.current = routes;
 
         // Update visible routes to include all selected modes
         setVisibleRoutes(selectedModes);
@@ -142,7 +144,7 @@ function App() {
         setVisibleRoutes([]);
       }
     }
-  }, [origin, destination, selectedModes, calculateRoutes, clearRoutes, routes]);
+  }, [origin, destination, selectedModes, calculateRoutes, clearRoutes]); // Removed routes dependency
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {

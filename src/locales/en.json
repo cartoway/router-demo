@@ -51,5 +51,20 @@
     "scooter": "Scooter",
     "van": "Van",
     "truck_19": "Truck <19t"
+  },
+  "errors": {
+    "requestError": "Request Error",
+    "apiMessage": "API Message:",
+    "noRoutesFound": "No routes found for selected modes",
+    "calculationError": "Error calculating routes. Check your connection.",
+    "requestSkipped": "Request skipped - previously failed",
+    "http400": "Some required parameters are missing",
+    "http401": "Your api_key is not valid",
+    "http404": "Transportation mode is not supported",
+    "http405": "Method not allowed",
+    "http417": "The given location is out of the supported area",
+    "http500": "An internal server error occurred",
+    "http204": "The given location is unreachable",
+    "allRoutesFailed": "All route calculations failed"
   }
 }

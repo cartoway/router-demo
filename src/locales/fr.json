@@ -51,5 +51,20 @@
     "scooter": "Scooter",
     "van": "Fourgon",
     "truck_19": "Camion <19t"
+  },
+  "errors": {
+    "requestError": "Erreur de requête",
+    "apiMessage": "Message API :",
+    "noRoutesFound": "Aucun itinéraire trouvé pour les modes sélectionnés",
+    "calculationError": "Erreur lors du calcul des itinéraires. Vérifiez votre connexion.",
+    "requestSkipped": "Requête ignorée - précédemment échouée",
+    "http400": "Paramètres requis manquants",
+    "http401": "Votre clé API n'est pas valide",
+    "http404": "Mode de transport non supporté",
+    "http405": "Méthode non autorisée",
+    "http417": "La localisation donnée est en dehors de la zone supportée",
+    "http500": "Une erreur interne du serveur s'est produite",
+    "http204": "La localisation donnée est inaccessible",
+    "allRoutesFailed": "Tous les calculs d'itinéraires ont échoué"
   }
 }

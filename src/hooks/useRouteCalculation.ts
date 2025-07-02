@@ -15,19 +15,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { RouterApiService, ApiRequest } from '../services/routerApi';
-import { RoutePoint, RouteResult } from '../types/route';
+import { RoutePoint, RouteResult, CartowayResponse } from '../types/route';
 import { ROUTE_COLORS } from '../config/transportModes';
+import { useTranslation } from '../contexts/TranslationContext';
 
 export const useRouteCalculation = () => {
   const [routes, setRoutes] = useState<RouteResult[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const calculationStartTime = useRef<number | null>(null);
-  const minCalculationTime = 800; // Minimum 800ms to show loading state
+  const { t } = useTranslation();
 
-  const routerService = new RouterApiService();
+  // Use useRef to keep the service instance stable across renders
+  const routerServiceRef = useRef<RouterApiService>();
+  if (!routerServiceRef.current) {
+    routerServiceRef.current = new RouterApiService();
+  }
+
+  // Set translator for the service
+  React.useEffect(() => {
+    if (routerServiceRef.current) {
+      routerServiceRef.current.setTranslator(t);
+    }
+  }, [t]);
 
   const calculateRoutes = useCallback(async (
     origin: RoutePoint,
@@ -35,23 +46,27 @@ export const useRouteCalculation = () => {
     modes: string[],
     onRequestLog?: (request: ApiRequest) => void
   ) => {
-    if (modes.length === 0) return;
+    if (modes.length === 0 || !routerServiceRef.current) return;
+
+    // Prevent multiple simultaneous calculations
+    if (isCalculating) {
+      return;
+    }
 
     // Set up request logging if callback provided
     if (onRequestLog) {
-      routerService.setRequestLogger(onRequestLog);
+      routerServiceRef.current.setRequestLogger(onRequestLog);
     }
 
-    calculationStartTime.current = Date.now();
     setIsCalculating(true);
     setError(null);
 
     try {
-      const results = await routerService.calculateMultipleRoutes(origin, destination, modes);
+      const results = await routerServiceRef.current.calculateMultipleRoutes(origin, destination, modes);
 
       const routeResults: RouteResult[] = [];
 
-      results.forEach((result, index) => {
+      results.forEach((result: CartowayResponse, index: number) => {
         const mode = modes[index];
 
         // Check if the response has features
@@ -59,7 +74,7 @@ export const useRouteCalculation = () => {
           const feature = result.features[0]; // Take the first feature
 
           // Convert RouterApi feature to RouteResult format
-          const routeResult = routerService.convertToRouteResult(feature, mode);
+          const routeResult = routerServiceRef.current!.convertToRouteResult(feature, mode);
 
           routeResults.push({
             ...routeResult,
@@ -77,20 +92,16 @@ export const useRouteCalculation = () => {
       });
 
       if (routeResults.length === 0) {
-        setError('Aucun itinéraire trouvé pour les modes sélectionnés');
+        setError(t('errors.noRoutesFound'));
       }
     } catch (err) {
-      console.error('Error calculating routes:', err);
-      setError('Erreur lors du calcul des itinéraires. Vérifiez votre connexion.');
+      // Use the specific error message from the API if available
+      const errorMessage = err instanceof Error ? err.message : t('errors.calculationError');
+      setError(errorMessage);
       setRoutes([]);
     } finally {
-      // Ensure minimum display time for smooth UX
-      const elapsedTime = Date.now() - (calculationStartTime.current || 0);
-      const remainingTime = Math.max(0, minCalculationTime - elapsedTime);
-
-      setTimeout(() => {
-        setIsCalculating(false);
-      }, remainingTime);
+      // Always stop calculating when done
+      setIsCalculating(false);
     }
   }, []);
 
