@@ -21,8 +21,6 @@ import {
   faClock,
   faLocationDot,
   faBolt,
-  faEye,
-  faEyeSlash,
   faDownload,
   faTrash,
   faBug,
@@ -35,8 +33,7 @@ import { ApiRequest } from '../types/api';
 
 interface RouteResultsProps {
   routes: RouteResult[];
-  visibleRoutes: string[];
-  onToggleRouteVisibility: (mode: string) => void;
+  selectedModes: string[];
   isDevMode?: boolean;
   apiRequests?: ApiRequest[];
   onClearApiRequests?: () => void;
@@ -45,8 +42,7 @@ interface RouteResultsProps {
 
 export const RouteResults: React.FC<RouteResultsProps> = ({
   routes,
-  visibleRoutes,
-  onToggleRouteVisibility,
+  selectedModes,
   isDevMode = false,
   apiRequests = [],
   onClearApiRequests,
@@ -54,7 +50,10 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  if (routes.length === 0 && !isDevMode) {
+  // Filtrer les routes selon les modes sélectionnés
+  const filteredRoutes = routes.filter(route => selectedModes.includes(route.mode));
+
+  if (filteredRoutes.length === 0 && !isDevMode) {
     return null;
   }
 
@@ -135,7 +134,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
   return (
     <div className="space-y-6">
       {/* Route Results */}
-      {routes.length > 0 && (
+      {filteredRoutes.length > 0 && (
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
           <div className="flex items-center space-x-2 mb-3 sm:mb-4">
             <FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-green-600" />
@@ -143,17 +142,11 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
           </div>
 
           <div className="space-y-2 sm:space-y-3">
-            {routes.map((route) => {
-              const isVisible = visibleRoutes.includes(route.mode);
-
+            {filteredRoutes.map((route) => {
               return (
                 <div
                   key={route.mode}
-                  className={`border-2 rounded-lg p-3 sm:p-4 transition-all duration-200 ${
-                    isVisible
-                      ? 'border-gray-300 bg-white shadow-sm'
-                      : 'border-gray-200 bg-gray-50'
-                  }`}
+                  className={`border-2 rounded-lg p-3 sm:p-4 transition-all duration-200 border-gray-300 bg-white shadow-sm`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2 sm:space-x-3">
@@ -165,16 +158,6 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                         {getModeLabel(route.mode, t)}
                       </span>
                     </div>
-                    <button
-                      onClick={() => onToggleRouteVisibility(route.mode)}
-                      className={`p-1 rounded transition-colors duration-200 flex-shrink-0 ${
-                        isVisible
-                          ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {isVisible ? <FontAwesomeIcon icon={faEye} className="h-4 w-4" /> : <FontAwesomeIcon icon={faEyeSlash} className="h-4 w-4" />}
-                    </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
@@ -193,12 +176,12 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {route.duration === Math.min(...routes.map(r => r.duration)) && (
+                    {route.duration === Math.min(...filteredRoutes.map(r => r.duration)) && (
                       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         {t('routeResults.fastest')}
                       </div>
                     )}
-                    {route.distance === Math.min(...routes.map(r => r.distance)) && (
+                    {route.distance === Math.min(...filteredRoutes.map(r => r.distance)) && (
                       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {t('routeResults.shortest')}
                       </div>

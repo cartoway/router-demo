@@ -180,14 +180,6 @@ function App() {
     );
   };
 
-  const handleToggleRouteVisibility = (mode: string) => {
-    setVisibleRoutes(prev =>
-      prev.includes(mode)
-        ? prev.filter(m => m !== mode)
-        : [...prev, mode]
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Header isDevMode={isDevMode} onToggleDevMode={toggleDevMode} />
@@ -224,8 +216,7 @@ function App() {
           <div className="lg:col-span-3 space-y-6 order-3 p-4 lg:p-0">
             <RouteResults
               routes={routes}
-              visibleRoutes={visibleRoutes}
-              onToggleRouteVisibility={handleToggleRouteVisibility}
+              selectedModes={selectedModes}
               isDevMode={isDevMode}
               apiRequests={filteredApiRequests}
               onClearApiRequests={clearApiRequests}
