@@ -103,8 +103,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           }
         ]
       },
-      center: [2.3522, 48.8566], // Paris center
-      zoom: 10,
+      center: [-0.5792, 44.8378], // Bordeaux center
+      zoom: 11,
     });
 
     map.current.addControl(new maplibregl.NavigationControl({
