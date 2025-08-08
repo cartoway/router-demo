@@ -153,10 +153,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   }, [createClickHandler]); // Dependencies for click handler
 
   // Create marker element with proper CSS classes
-  const createMarkerElement = (color: string) => {
+  const createMarkerElement = useCallback((color: string) => {
     const el = document.createElement('div');
-
-    // Use CSS classes instead of inline styles for better performance and positioning
     el.className = 'custom-marker';
     el.style.cssText = `
       width: 24px;
@@ -171,7 +169,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       pointer-events: auto;
     `;
 
-    // Add inner dot
     const innerDot = document.createElement('div');
     innerDot.style.cssText = `
       width: 8px;
@@ -186,61 +183,59 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     el.appendChild(innerDot);
 
     return el;
-  };
+  }, []);
 
-  // Update origin marker
+  // Utility to create/update a draggable marker with common behavior
+  const upsertMarker = useCallback(
+    (
+      markerRef: React.MutableRefObject<maplibregl.Marker | null>,
+      point: RoutePoint | null,
+      color: string,
+      onRemove: (e: Event) => void,
+      type: 'origin' | 'destination'
+    ) => {
+      if (!map.current || !isMapLoaded.current) return;
+
+      // Remove existing marker if present
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+
+      if (!point) return;
+
+      const el = createMarkerElement(color);
+      const marker = new maplibregl.Marker({
+        element: el,
+        anchor: 'center',
+        draggable: true,
+      })
+        .setLngLat([point.lng, point.lat])
+        .addTo(map.current);
+
+      markerRef.current = marker;
+
+      // Click to remove
+      el.addEventListener('click', onRemove);
+
+      // Drag end to update
+      const handleDragEnd = () => {
+        if (!markerRef.current) return;
+        const lngLat = markerRef.current.getLngLat();
+        onPointSelect({ lat: lngLat.lat, lng: lngLat.lng }, type);
+      };
+      marker.on('dragend', handleDragEnd);
+    },
+    [createMarkerElement, onPointSelect]
+  );
+
+  // Single effect to handle both origin and destination markers
   useEffect(() => {
     if (!map.current || !isMapLoaded.current) return;
 
-    // Remove existing marker
-    if (originMarker.current) {
-      originMarker.current.remove();
-      originMarker.current = null;
-    }
-
-    // Add new marker if origin exists
-    if (origin) {
-      const el = createMarkerElement('#10B981'); // Green color for origin
-
-      // Create marker with exact coordinates
-      originMarker.current = new maplibregl.Marker({
-        element: el,
-        anchor: 'center'
-      })
-        .setLngLat([origin.lng, origin.lat])
-        .addTo(map.current);
-
-      // Add click handler to remove origin
-      el.addEventListener('click', handleOriginMarkerClick);
-    }
-  }, [origin, handleOriginMarkerClick]);
-
-  // Update destination marker
-  useEffect(() => {
-    if (!map.current || !isMapLoaded.current) return;
-
-    // Remove existing marker
-    if (destinationMarker.current) {
-      destinationMarker.current.remove();
-      destinationMarker.current = null;
-    }
-
-    // Add new marker if destination exists
-    if (destination) {
-      const el = createMarkerElement('#EF4444'); // Red color for destination
-
-      // Create marker with exact coordinates
-      destinationMarker.current = new maplibregl.Marker({
-        element: el,
-        anchor: 'center'
-      })
-        .setLngLat([destination.lng, destination.lat])
-        .addTo(map.current);
-
-      // Add click handler to remove destination
-      el.addEventListener('click', handleDestinationMarkerClick);
-    }
-  }, [destination, handleDestinationMarkerClick]);
+    upsertMarker(originMarker, origin, '#10B981', handleOriginMarkerClick, 'origin');
+    upsertMarker(destinationMarker, destination, '#EF4444', handleDestinationMarkerClick, 'destination');
+  }, [origin, destination, upsertMarker, handleOriginMarkerClick, handleDestinationMarkerClick]);
 
   // Update routes
   useEffect(() => {
