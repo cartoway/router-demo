@@ -30,7 +30,27 @@ import { ENABLED_TRANSPORT_MODES, TransportMode, ACTIVE_TRANSPORT_MODES } from '
 function App() {
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
   const [destination, setDestination] = useState<RoutePoint | null>(null);
+
+  const initialSelectedModesFromUrl: string[] | null = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const modesParam = params.get('modes');
+      if (!modesParam) return null;
+      const normalized = modesParam.replace(/%2C/ig, ',').replace(/%3B/ig, ';');
+      const parsed = normalized
+        .split(/[;,]/)
+        .map((m) => m.trim().toLowerCase())
+        .filter((m) => m.length > 0);
+      return parsed.length > 0 ? parsed : null;
+    } catch {
+      return null;
+    }
+  })();
+
   const [selectedModes, setSelectedModes] = useState<string[]>(() => {
+    if (initialSelectedModesFromUrl) {
+      return initialSelectedModesFromUrl;
+    }
     // Initialize with ACTIVE_TRANSPORT_MODES, or default to first 2 enabled modes
     if (ACTIVE_TRANSPORT_MODES.length > 0) {
       return ACTIVE_TRANSPORT_MODES;
@@ -48,6 +68,83 @@ function App() {
   const prevRoutes = useRef<RouteResult[]>([]);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
+
+  // Helper: parse coordinate string with separators ':', '_' or ','
+  const parseLatLng = (value: string | null): RoutePoint | null => {
+    if (!value) return null;
+    const parts = value.split(/[:_,]/);
+    if (parts.length !== 2) return null;
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+    if (lng < -180 || lng > 180 || lat < -90 || lat > 90) return null;
+    return { lat, lng };
+  };
+
+  // On first load: read URL params and initialize state
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const srcStr = params.get('src');
+    const dstStr = params.get('dst');
+
+    const originParam = parseLatLng(srcStr);
+    const destinationParam = parseLatLng(dstStr);
+    const modesParam = params.get('modes');
+    const debugParam = params.get('debug');
+
+    if (originParam) setOrigin(originParam);
+    if (destinationParam) setDestination(destinationParam);
+
+    if (modesParam) {
+      const normalized = modesParam
+        .replace(/%2C/ig, ',')
+        .replace(/%3B/ig, ';');
+      const parsedModes = normalized
+        .split(/[;,]/)
+        .map(m => m.trim().toLowerCase())
+        .filter(m => m.length > 0);
+      if (parsedModes.length > 0) {
+        setSelectedModes(parsedModes);
+      }
+    }
+
+    if (debugParam) {
+      setIsDevMode(debugParam === '1' || debugParam.toLowerCase() === 'true');
+    }
+  }, []);
+
+  // Keep URL in sync with state
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (origin) {
+      params.set('src', `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`);
+    } else {
+      params.delete('src');
+    }
+
+    if (destination) {
+      params.set('dst', `${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}`);
+    } else {
+      params.delete('dst');
+    }
+
+    if (selectedModes.length > 0) {
+      params.set('modes', selectedModes.join(','));
+    } else {
+      params.delete('modes');
+    }
+
+    if (isDevMode) {
+      params.set('debug', '1');
+    } else {
+      params.delete('debug');
+    }
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [origin, destination, selectedModes, isDevMode]);
 
   // Handle API request logging
   const handleApiRequest = (request: ApiRequest) => {
