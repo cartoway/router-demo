@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { RoutePoint, RouteResult } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
@@ -42,6 +42,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const destinationMarker = useRef<maplibregl.Marker | null>(null);
   const hasInitialFit = useRef(false);
   const isMapLoaded = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
   const currentClickHandler = useRef<((e: maplibregl.MapMouseEvent) => void) | null>(null);
 
   // Memoize marker click handlers
@@ -115,6 +116,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     // Wait for map to load before setting the flag
     map.current.on('load', () => {
       isMapLoaded.current = true;
+      setMapReady(true);
 
       // Initialize click handler immediately after map loads
       const clickHandler = createClickHandler();
@@ -235,11 +237,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
     upsertMarker(originMarker, origin, '#10B981', handleOriginMarkerClick, 'origin');
     upsertMarker(destinationMarker, destination, '#EF4444', handleDestinationMarkerClick, 'destination');
-  }, [origin, destination, upsertMarker, handleOriginMarkerClick, handleDestinationMarkerClick]);
+  }, [origin, destination, upsertMarker, handleOriginMarkerClick, handleDestinationMarkerClick, mapReady]);
 
   // Update routes
   useEffect(() => {
-    if (!map.current || !isMapLoaded.current) return;
+    if (!map.current || !mapReady) return;
 
     // Clean up existing route layers - only if map is loaded and has style
     try {
@@ -371,7 +373,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     if (routes.length === 0) {
       hasInitialFit.current = false;
     }
-  }, [routes, visibleRoutes, origin, destination]);
+  }, [routes, visibleRoutes, origin, destination, mapReady]);
 
   const getInstructionText = () => {
     if (!origin && !destination) {
