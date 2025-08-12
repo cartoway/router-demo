@@ -25,7 +25,7 @@ import { RoutePoint, RouteResult } from './types/route';
 import { ApiRequest } from './types/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBug } from '@fortawesome/free-solid-svg-icons';
-import { ENABLED_TRANSPORT_MODES, TransportMode, ACTIVE_TRANSPORT_MODES } from './config/transportModes';
+import { ENABLED_TRANSPORT_MODES, TransportMode, TRANSPORT_MODES_MAP, ACTIVE_TRANSPORT_MODES } from './config/transportModes';
 
 function App() {
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
@@ -40,7 +40,9 @@ function App() {
       const parsed = normalized
         .split(/[;,]/)
         .map((m) => m.trim().toLowerCase())
-        .filter((m) => m.length > 0);
+        .filter((m) => m.length > 0)
+        // Keep only modes that exist in current config AND are enabled
+        .filter((m) => Boolean(TRANSPORT_MODES_MAP[m]?.enabled));
       return parsed.length > 0 ? parsed : null;
     } catch {
       return null;
@@ -103,7 +105,9 @@ function App() {
       const parsedModes = normalized
         .split(/[;,]/)
         .map(m => m.trim().toLowerCase())
-        .filter(m => m.length > 0);
+        .filter(m => m.length > 0)
+        // Keep only modes that exist in current config AND are enabled
+        .filter(m => Boolean(TRANSPORT_MODES_MAP[m]?.enabled));
       if (parsedModes.length > 0) {
         setSelectedModes(parsedModes);
       }
