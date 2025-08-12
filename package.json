@@ -15,7 +15,9 @@
     "url": "https://github.com/cartoway/router-demo/issues"
   },
   "scripts": {
+    "predev": "node scripts/sync-router-modes.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/sync-router-modes.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

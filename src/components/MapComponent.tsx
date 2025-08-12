@@ -19,6 +19,7 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { RoutePoint, RouteResult } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
+import { isDevTransportMode } from '../config/transportModes';
 
 interface MapComponentProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
@@ -327,6 +328,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
               'line-color': route.color,
               'line-width': 6,
               'line-opacity': 0.9,
+              ...(isDevTransportMode(route.mode) ? { 'line-dasharray': [2, 2] } : {}),
             },
           });
         }
