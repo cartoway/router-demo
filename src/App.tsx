@@ -152,18 +152,16 @@ function App() {
 
   // Handle API request logging
   const handleApiRequest = (request: ApiRequest) => {
-    if (isDevMode) {
-      setApiRequests(prev => {
-        // Extract mode from request URL or data
-        const mode = extractModeFromRequest(request);
+    setApiRequests(prev => {
+      // Extract mode from request URL or data
+      const mode = extractModeFromRequest(request);
 
-        // Remove any existing request for this mode
-        const filtered = prev.filter(r => extractModeFromRequest(r) !== mode);
+      // Remove any existing request for this mode
+      const filtered = prev.filter(r => extractModeFromRequest(r) !== mode);
 
-        // Add the new request
-        return [...filtered, request];
-      });
-    }
+      // Add the new request
+      return [...filtered, request];
+    });
   };
 
   // Extract transport mode from request
@@ -188,7 +186,7 @@ function App() {
   // Filter API requests to only show selected modes
   const filteredApiRequests = apiRequests.filter(request => {
     const mode = extractModeFromRequest(request);
-    return mode && selectedModes.includes(mode);
+    return !mode || selectedModes.includes(mode);
   });
 
   // Toggle dev mode
@@ -297,6 +295,7 @@ function App() {
               onModeToggle={handleModeToggle}
               onPointSelect={handlePointSelect}
               isCalculating={isCalculating}
+              onApiRequestLog={handleApiRequest}
             />
           </div>
 

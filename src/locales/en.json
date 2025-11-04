@@ -10,13 +10,15 @@
       "label": "Origin",
       "defined": "✓ Defined",
       "notDefined": "Not defined",
-      "removeTooltip": "Remove origin"
+      "removeTooltip": "Remove origin",
+      "addressPlaceholder": "Origin address"
     },
     "destination": {
       "label": "Destination",
       "defined": "✓ Defined",
       "notDefined": "Not defined",
-      "removeTooltip": "Remove destination"
+      "removeTooltip": "Remove destination",
+      "addressPlaceholder": "Destination address"
     },
     "transportModes": {
       "title": "Transport modes",
