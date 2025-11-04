@@ -43,8 +43,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const destinationMarker = useRef<maplibregl.Marker | null>(null);
   const hasInitialFit = useRef(false);
   const isMapLoaded = useRef(false);
-  const [mapReady, setMapReady] = useState(false);
   const currentClickHandler = useRef<((e: maplibregl.MapMouseEvent) => void) | null>(null);
+  // Track previous presence to detect removals
+  const prevHadOrigin = useRef(false);
+  const prevHadDestination = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
   // Memoize marker click handlers
   const handleOriginMarkerClick = useCallback((e: Event) => {
@@ -239,6 +242,39 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     upsertMarker(originMarker, origin, '#10B981', handleOriginMarkerClick, 'origin');
     upsertMarker(destinationMarker, destination, '#EF4444', handleDestinationMarkerClick, 'destination');
   }, [origin, destination, upsertMarker, handleOriginMarkerClick, handleDestinationMarkerClick, mapReady]);
+
+  // Centralized recentering when points change (handles single or both points)
+  useEffect(() => {
+    if (!map.current || !isMapLoaded.current) return;
+    try {
+      const hadOrigin = prevHadOrigin.current;
+      const hadDestination = prevHadDestination.current;
+      const originRemoved = hadOrigin && !origin;
+      const destinationRemoved = hadDestination && !destination;
+
+      // Do not recenter on removals
+      if (originRemoved || destinationRemoved) {
+        prevHadOrigin.current = !!origin;
+        prevHadDestination.current = !!destination;
+        return;
+      }
+
+      if (origin && destination) {
+        const bounds = new maplibregl.LngLatBounds();
+        bounds.extend([origin.lng, origin.lat]);
+        bounds.extend([destination.lng, destination.lat]);
+        map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+      } else if (origin) {
+        map.current.easeTo({ center: [origin.lng, origin.lat], zoom: Math.max(map.current.getZoom(), 14) });
+      } else if (destination) {
+        map.current.easeTo({ center: [destination.lng, destination.lat], zoom: Math.max(map.current.getZoom(), 14) });
+      }
+    } catch {}
+    finally {
+      prevHadOrigin.current = !!origin;
+      prevHadDestination.current = !!destination;
+    }
+  }, [origin, destination]);
 
   // Update routes
   useEffect(() => {
