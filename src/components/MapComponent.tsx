@@ -20,6 +20,7 @@ import maplibregl from 'maplibre-gl';
 import { RoutePoint, RouteResult } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
 import { isDevTransportMode } from '../config/transportModes';
+import { cleanupRouteLayers, filterValidCoordinates, addRouteSourceAndLayers, buildBoundsForRoutes } from '../utils/map';
 
 interface MapComponentProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
@@ -243,62 +244,12 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     upsertMarker(destinationMarker, destination, '#EF4444', handleDestinationMarkerClick, 'destination');
   }, [origin, destination, upsertMarker, handleOriginMarkerClick, handleDestinationMarkerClick, mapReady]);
 
-  // Centralized recentering when points change (handles single or both points)
-  useEffect(() => {
-    if (!map.current || !isMapLoaded.current) return;
-    try {
-      const hadOrigin = prevHadOrigin.current;
-      const hadDestination = prevHadDestination.current;
-      const originRemoved = hadOrigin && !origin;
-      const destinationRemoved = hadDestination && !destination;
-
-      // Do not recenter on removals
-      if (originRemoved || destinationRemoved) {
-        prevHadOrigin.current = !!origin;
-        prevHadDestination.current = !!destination;
-        return;
-      }
-
-      if (origin && destination) {
-        const bounds = new maplibregl.LngLatBounds();
-        bounds.extend([origin.lng, origin.lat]);
-        bounds.extend([destination.lng, destination.lat]);
-        map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
-      } else if (origin) {
-        map.current.easeTo({ center: [origin.lng, origin.lat], zoom: Math.max(map.current.getZoom(), 14) });
-      } else if (destination) {
-        map.current.easeTo({ center: [destination.lng, destination.lat], zoom: Math.max(map.current.getZoom(), 14) });
-      }
-    } catch {}
-    finally {
-      prevHadOrigin.current = !!origin;
-      prevHadDestination.current = !!destination;
-    }
-  }, [origin, destination]);
-
   // Update routes
   useEffect(() => {
     if (!map.current || !mapReady) return;
 
-    // Clean up existing route layers - only if map is loaded and has style
-    try {
-      const style = map.current.getStyle();
-      if (style && style.layers) {
-        const existingLayers = style.layers;
-        existingLayers.forEach((layer) => {
-          if (layer.id.startsWith('route-')) {
-            if (map.current!.getLayer(layer.id)) {
-              map.current!.removeLayer(layer.id);
-            }
-            if (map.current!.getSource(layer.id)) {
-              map.current!.removeSource(layer.id);
-            }
-          }
-        });
-      }
-    } catch (error) {
-      console.warn('Could not clean up existing layers:', error);
-    }
+    // Clean up existing route layers
+    cleanupRouteLayers(map.current);
 
     // Add visible routes
     routes.forEach((route, index) => {
@@ -307,67 +258,16 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       const layerId = `route-${route.mode}-${index}`;
 
       try {
-        // Use decoded coordinates
-        if (route.geometry.coordinates && route.geometry.coordinates.length > 0) {
-          // Validate coordinates before adding to map
-          const validCoordinates = route.geometry.coordinates.filter(coord => {
-            if (!Array.isArray(coord) || coord.length < 2) return false;
-            const lng = coord[0];
-            const lat = coord[1];
-            return typeof lng === 'number' && typeof lat === 'number' &&
-                   lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90;
-          });
-
-          if (validCoordinates.length === 0) {
-            return;
-          }
-
-          map.current!.addSource(layerId, {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {
-                mode: route.mode
-              },
-              geometry: {
-                type: 'LineString',
-                coordinates: validCoordinates,
-              },
-            },
-          });
-
-          // Add outline layer first (background)
-          map.current!.addLayer({
-            id: `${layerId}-outline`,
-            type: 'line',
-            source: layerId,
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': '#ffffff',
-              'line-width': 8,
-              'line-opacity': 0.9,
-            },
-          });
-
-          map.current!.addLayer({
-            id: layerId,
-            type: 'line',
-            source: layerId,
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': route.color,
-              'line-width': 6,
-              'line-opacity': 0.9,
-              ...(isDevTransportMode(route.mode) ? { 'line-dasharray': [2, 2] } : {}),
-            },
-          });
-        }
+        const coords = route.geometry.coordinates || [];
+        const validCoordinates = filterValidCoordinates(coords);
+        if (validCoordinates.length === 0) return;
+        addRouteSourceAndLayers(
+          map.current!,
+          layerId,
+          route.color,
+          validCoordinates,
+          isDevTransportMode(route.mode)
+        );
       } catch (error) {
         console.error('Error adding route layer:', error, route);
       }
@@ -376,35 +276,16 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     // Fit map to show all routes only when routes are first calculated
     if (routes.length > 0 && origin && destination && !hasInitialFit.current) {
       try {
-        const bounds = new maplibregl.LngLatBounds();
-        bounds.extend([origin.lng, origin.lat]);
-        bounds.extend([destination.lng, destination.lat]);
-
-        routes.forEach((route) => {
-          if (route.geometry && visibleRoutes.includes(route.mode) && route.geometry.coordinates) {
-            route.geometry.coordinates.forEach((coord) => {
-              if (Array.isArray(coord) && coord.length >= 2) {
-                const lng = coord[0];
-                const lat = coord[1];
-
-                // Validate coordinates before extending bounds
-                if (typeof lng === 'number' && typeof lat === 'number' &&
-                    lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90) {
-                  bounds.extend([lng, lat]);
-                }
-              }
-            });
-          }
-        });
-
-        map.current.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 15
-        });
-        hasInitialFit.current = true;
-      } catch (error) {
-        console.error('Error fitting bounds:', error);
+        const bounds = buildBoundsForRoutes(routes, visibleRoutes, origin, destination);
+        if (bounds) {
+          map.current.fitBounds(bounds, {
+            padding: 50,
+            maxZoom: 15
+          });
+          hasInitialFit.current = true;
+        }
       }
+      catch {}
     }
 
     // Reset the flag when routes are cleared
