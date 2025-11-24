@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faLocationDot,
@@ -97,7 +97,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
     originAbortRef.current = ac;
     geocodeSearch(q, ac.signal, { country: geocodeCountry }, onApiRequestLog).then(setOriginSuggestions).catch(() => setOriginSuggestions([]));
     return () => ac.abort();
-  }, [originDebounced, geocodeCountry]);
+  }, [originDebounced, geocodeCountry, onApiRequestLog]);
 
   // Search destination suggestions
   useEffect(() => {
@@ -109,7 +109,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
     destAbortRef.current = ac;
     geocodeSearch(q, ac.signal, { country: geocodeCountry }, onApiRequestLog).then(setDestSuggestions).catch(() => setDestSuggestions([]));
     return () => ac.abort();
-  }, [destDebounced, geocodeCountry]);
+  }, [destDebounced, geocodeCountry, onApiRequestLog]);
 
   const pickOrigin = (s: GeocodeSuggestion) => {
     onPointSelect({ lat: s.lat, lng: s.lng }, 'origin');
@@ -177,33 +177,37 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
             <option value="fr">France</option>
           </select>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 gap-2 sm:gap-3">
           <div className="bg-gray-50 rounded-lg">
             {/* Address input - origin */}
             <div className="relative">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white flex-shrink-0"></div>
-                <div className="relative flex-1">
+              <div className="relative flex-1">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white"></span>
+                {origin ? (
+                  <div className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm text-gray-700 bg-white select-none flex items-center overflow-hidden truncate">
+                    {formatCoordinates(origin)}
+                  </div>
+                ) : (
                   <input
                     type="text"
                     placeholder={t('routeControls.origin.addressPlaceholder')}
-                    className="w-full p-2 pr-7 border rounded text-sm"
+                    className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm overflow-hidden truncate"
                     value={originQuery}
                     onChange={e => setOriginQuery(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyOriginCoords(); } }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => onPointSelect(null, 'origin')}
-                    disabled={!origin}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${origin ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
-                    title={t('routeControls.origin.removeTooltip')}
-                  >
-                    <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                  </button>
-                </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onPointSelect(null, 'origin')}
+                  disabled={!origin}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${origin ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                  title={t('routeControls.origin.removeTooltip')}
+                >
+                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+                </button>
               </div>
-              {originSuggestions.length > 0 && (
+              {!origin && originSuggestions.length > 0 && (
                 <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
                   {parseCoords(originQuery) && (
                     <button
@@ -233,29 +237,33 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
           <div className="bg-gray-50 rounded-lg">
             {/* Address input - destination */}
             <div className="mb-2 relative">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white flex-shrink-0"></div>
-                <div className="relative flex-1">
+              <div className="relative flex-1">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white"></span>
+                {destination ? (
+                  <div className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm text-gray-700 bg-white select-none flex items-center overflow-hidden truncate">
+                    {formatCoordinates(destination)}
+                  </div>
+                ) : (
                   <input
                     type="text"
                     placeholder={t('routeControls.destination.addressPlaceholder')}
-                    className="w-full p-2 pr-7 border rounded text-sm"
+                    className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm overflow-hidden truncate"
                     value={destQuery}
                     onChange={e => setDestQuery(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyDestCoords(); } }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => onPointSelect(null, 'destination')}
-                    disabled={!destination}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${destination ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
-                    title={t('routeControls.destination.removeTooltip')}
-                  >
-                    <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                  </button>
-                </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onPointSelect(null, 'destination')}
+                  disabled={!destination}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${destination ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                  title={t('routeControls.destination.removeTooltip')}
+                >
+                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+                </button>
               </div>
-              {destSuggestions.length > 0 && (
+              {!destination && destSuggestions.length > 0 && (
                 <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
                   {parseCoords(destQuery) && (
                     <button
