@@ -25,6 +25,7 @@ export const useRouteCalculation = () => {
   const [routes, setRoutes] = useState<RouteResult[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [capabilities, setCapabilities] = useState<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean }>>({});
   const { t } = useTranslation();
 
   // Use useRef to keep the service instance stable across renders
@@ -40,11 +41,26 @@ export const useRouteCalculation = () => {
     }
   }, [t]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!routerServiceRef.current) return;
+        const caps = await routerServiceRef.current.getCapabilities();
+        if (!cancelled) setCapabilities(caps);
+      } catch {
+        // ignore capability errors; UI will just not display support indicators
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const calculateRoutes = useCallback(async (
     origin: RoutePoint,
     destination: RoutePoint,
     modes: string[],
-    onRequestLog?: (request: ApiRequest) => void
+    onRequestLog?: (request: ApiRequest) => void,
+    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; }>
   ) => {
     if (modes.length === 0 || !routerServiceRef.current) return;
 
@@ -62,7 +78,7 @@ export const useRouteCalculation = () => {
     setError(null);
 
     try {
-      const results = await routerServiceRef.current.calculateMultipleRoutes(origin, destination, modes);
+      const results = await routerServiceRef.current.calculateMultipleRoutes(origin, destination, modes, options);
 
       const routeResults: RouteResult[] = [];
 
@@ -116,5 +132,6 @@ export const useRouteCalculation = () => {
     error,
     calculateRoutes,
     clearRoutes,
+    capabilities,
   };
 };

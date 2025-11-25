@@ -55,16 +55,16 @@ export const ApiRequestsPanel: React.FC<ApiRequestsPanelProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
           <FontAwesomeIcon icon={faBug} className="h-5 w-5 text-red-600" />
           <h3 className="text-lg font-semibold text-gray-900">API Requests</h3>
           <span className="text-sm text-gray-500">({apiRequests.length})</span>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center flex-wrap gap-2 w-full justify-end mt-2 sm:mt-0 sm:w-auto">
           <button
             onClick={onExportApiRequests}
-            className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+            className="shrink-0 whitespace-nowrap flex items-center space-x-2 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
             title="Export requests as JSON"
           >
             <FontAwesomeIcon icon={faDownload} className="h-4 w-4" />
@@ -72,7 +72,7 @@ export const ApiRequestsPanel: React.FC<ApiRequestsPanelProps> = ({
           </button>
           <button
             onClick={onClearApiRequests}
-            className="flex items-center space-x-2 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            className="shrink-0 whitespace-nowrap flex items-center space-x-2 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
             title="Clear all requests"
           >
             <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
