@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapComponent } from './components/MapComponent';
 import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
@@ -100,6 +100,17 @@ function App() {
     const destinationParam = parseLatLng(dstStr);
     const modesParam = params.get('modes');
     const debugParam = params.get('debug');
+    // Read routing options (accept both 'lez' and 'low_emission_zone')
+    const motorwayParam = params.get('motorway');
+    const tollParam = params.get('toll');
+    const lezParam = params.get('lez') ?? params.get('low_emission_zone');
+    const parseBool = (v: string | null): boolean | null => {
+      if (v == null) return null;
+      const s = v.toLowerCase();
+      if (s === '1' || s === 'true' || s === 'yes' || s === 'on') return true;
+      if (s === '0' || s === 'false' || s === 'no' || s === 'off') return false;
+      return null;
+    };
 
     if (originParam) setOrigin(originParam);
     if (destinationParam) setDestination(destinationParam);
@@ -121,6 +132,18 @@ function App() {
 
     if (debugParam) {
       setIsDevMode(debugParam === '1' || debugParam.toLowerCase() === 'true');
+    }
+
+    // Init options state from URL if provided
+    const motorwayVal = parseBool(motorwayParam);
+    const tollVal = parseBool(tollParam);
+    const lezVal = parseBool(lezParam);
+    if (motorwayVal !== null || tollVal !== null || lezVal !== null) {
+      setRouteOptions(prev => ({
+        motorway: motorwayVal ?? prev.motorway,
+        toll: tollVal ?? prev.toll,
+        low_emission_zone: lezVal ?? prev.low_emission_zone,
+      }));
     }
   }, []);
 
@@ -152,12 +175,29 @@ function App() {
       params.delete('debug');
     }
 
+    // Sync routing options: set '1' when true, remove when false for brevity
+    if (routeOptions.motorway) {
+      params.set('motorway', '1');
+    } else {
+      params.delete('motorway');
+    }
+    if (routeOptions.toll) {
+      params.set('toll', '1');
+    } else {
+      params.delete('toll');
+    }
+    if (routeOptions.low_emission_zone) {
+      params.set('lez', '1');
+    } else {
+      params.delete('lez');
+    }
+
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [origin, destination, selectedModes, isDevMode]);
+  }, [origin, destination, selectedModes, isDevMode, routeOptions]);
 
   // Handle API request logging
-  const handleApiRequest = (request: ApiRequest) => {
+  const handleApiRequest = useCallback((request: ApiRequest) => {
     setApiRequests(prev => {
       // Extract mode from request URL or data
       const mode = extractModeFromRequest(request);
@@ -168,7 +208,7 @@ function App() {
       // Add the new request
       return [...filtered, request];
     });
-  };
+  }, []);
 
   // Extract transport mode from request
   const extractModeFromRequest = (request: ApiRequest): string | null => {
@@ -270,7 +310,7 @@ function App() {
         setVisibleRoutes([]);
       }
     }
-  }, [origin, destination, selectedModes, routeOptions, calculateRoutes, clearRoutes]); // Removed routes dependency
+  }, [origin, destination, selectedModes, routeOptions, routes, calculateRoutes, clearRoutes, handleApiRequest]);
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {
