@@ -68,8 +68,14 @@ function App() {
   const prevOrigin = useRef<RoutePoint | null>(null);
   const prevDestination = useRef<RoutePoint | null>(null);
   const prevRoutes = useRef<RouteResult[]>([]);
+  const prevOptions = useRef<{ motorway: boolean; toll: boolean; low_emission_zone: boolean } | null>(null);
 
-  const { routes, isCalculating, error, calculateRoutes, clearRoutes } = useRouteCalculation();
+  const { routes, isCalculating, error, calculateRoutes, clearRoutes, capabilities } = useRouteCalculation();
+  const [routeOptions, setRouteOptions] = useState<{ motorway: boolean; toll: boolean; low_emission_zone: boolean }>({
+    motorway: false,
+    toll: false,
+    low_emission_zone: false,
+  });
 
   // Helper: parse coordinate string with separators ':', '_' or ','
   const parseLatLng = (value: string | null): RoutePoint | null => {
@@ -222,9 +228,21 @@ function App() {
           prevDestination.current?.lat !== destination.lat ||
           prevDestination.current?.lng !== destination.lng;
 
-        if (pointsChanged) {
+        // Check if options changed
+        const optionsChanged = (() => {
+          const prev = prevOptions.current;
+          const curr = routeOptions;
+          if (!prev) return true;
+          return (
+            prev.motorway !== curr.motorway ||
+            prev.toll !== curr.toll ||
+            prev.low_emission_zone !== curr.low_emission_zone
+          );
+        })();
+
+        if (pointsChanged || optionsChanged) {
           // Recalculate all routes when points change
-          calculateRoutes(origin, destination, selectedModes, handleApiRequest);
+          calculateRoutes(origin, destination, selectedModes, handleApiRequest, routeOptions);
         } else {
           // Check if we need to calculate new modes
           const existingModes = prevRoutes.current.map(route => route.mode);
@@ -232,7 +250,7 @@ function App() {
 
           if (newModes.length > 0) {
             // Calculate only new routes
-            calculateRoutes(origin, destination, newModes, handleApiRequest);
+            calculateRoutes(origin, destination, newModes, handleApiRequest, routeOptions);
           }
         }
 
@@ -245,13 +263,14 @@ function App() {
         // Update refs
         prevOrigin.current = origin;
         prevDestination.current = destination;
+        prevOptions.current = routeOptions;
       } else {
         // Clear routes if no modes are selected
         clearRoutes();
         setVisibleRoutes([]);
       }
     }
-  }, [origin, destination, selectedModes, calculateRoutes, clearRoutes]); // Removed routes dependency
+  }, [origin, destination, selectedModes, routeOptions, calculateRoutes, clearRoutes]); // Removed routes dependency
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {
@@ -296,6 +315,9 @@ function App() {
               onPointSelect={handlePointSelect}
               isCalculating={isCalculating}
               onApiRequestLog={handleApiRequest}
+              capabilities={capabilities}
+              options={routeOptions}
+              onOptionsChange={setRouteOptions}
             />
           </div>
 

@@ -19,7 +19,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faLocationDot,
-  faXmark
+  faXmark,
+  faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 import { RoutePoint } from '../types/route';
 import { ENABLED_TRANSPORT_MODES, getModeLabel } from '../config/transportModes';
@@ -35,6 +36,9 @@ interface RouteControlsProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
   isCalculating: boolean;
   onApiRequestLog?: (request: ApiRequest) => void;
+  capabilities?: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean }>;
+  options?: { motorway: boolean; toll: boolean; low_emission_zone: boolean };
+  onOptionsChange?: (opts: { motorway: boolean; toll: boolean; low_emission_zone: boolean }) => void;
 }
 
 export const RouteControls: React.FC<RouteControlsProps> = ({
@@ -45,8 +49,13 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   onPointSelect,
   isCalculating,
   onApiRequestLog,
+  capabilities = {},
+  options = { motorway: false, toll: false, low_emission_zone: false },
+  onOptionsChange,
 }) => {
   const { t } = useTranslation();
+
+  const [optionsOpen, setOptionsOpen] = useState<boolean>(false);
 
   const formatCoordinates = (point: RoutePoint) => {
     return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
@@ -310,6 +319,68 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
               <span className="text-xs sm:text-sm font-medium">{getModeLabel(id, t)}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Routing Options - Accordion */}
+      <div className="border rounded-lg bg-white">
+        <button
+          type="button"
+          onClick={() => setOptionsOpen(!optionsOpen)}
+          aria-expanded={optionsOpen}
+          className="w-full flex items-center justify-between px-3 py-2"
+        >
+          <span className="text-sm font-medium text-gray-700">{t('routeControls.options.title')}</span>
+          <FontAwesomeIcon
+            icon={faChevronDown}
+            className={`h-4 w-4 text-gray-500 transition-transform ${optionsOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <div className={`transition-all duration-300 overflow-hidden ${optionsOpen ? 'max-h-[1200px] px-3 pb-3' : 'max-h-0 px-3'}`}>
+          {[
+            { key: 'motorway' as const, label: t('routeControls.options.motorway') },
+            { key: 'toll' as const, label: t('routeControls.options.toll') },
+            { key: 'low_emission_zone' as const, label: t('routeControls.options.low_emission_zone') },
+          ].map(({ key, label }) => {
+            const supportedModes = selectedModes.filter(m => capabilities[m]?.[key]);
+            const unsupportedModes = selectedModes.filter(m => !capabilities[m]?.[key]);
+            const active = options[key];
+            const disabled = selectedModes.length > 0 && supportedModes.length === 0;
+            return (
+              <div key={key} className="grid grid-cols-[1fr_auto] items-center gap-3 border rounded-lg px-3 py-2 mb-2 bg-white">
+                <div className="min-w-0">
+                  <div className="text-sm text-gray-800">{label}</div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {selectedModes.length === 0 && (
+                      <span className="text-xs text-gray-500">{t('routeControls.options.noneSelected')}</span>
+                    )}
+                    {supportedModes.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+                        {t('routeControls.options.supportedLabel')} {supportedModes.join(', ')}
+                      </span>
+                    )}
+                    {unsupportedModes.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">
+                        {t('routeControls.options.unsupportedLabel')} {unsupportedModes.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOptionsChange && onOptionsChange({ ...options, [key]: !active })}
+                  className={`justify-self-end relative inline-flex h-6 w-11 shrink-0 flex-none items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${active ? 'bg-blue-600' : 'bg-gray-200'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={disabled ? 'Aucun des modes sélectionnés ne supporte cette option' : active ? 'Désactiver' : 'Activer'}
+                  disabled={false}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${active ? 'translate-x-6' : 'translate-x-1'}`}
+                  />
+                  <span className="sr-only">{label}</span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 

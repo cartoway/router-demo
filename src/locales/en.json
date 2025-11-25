@@ -6,6 +6,15 @@
   },
   "routeControls": {
     "title": "Route Calculator",
+    "options": {
+      "title": "Options",
+      "motorway": "Motorways",
+      "toll": "Tolls",
+      "low_emission_zone": "Low emission zones",
+      "noneSelected": "No mode selected",
+      "supportedLabel": "Supported:",
+      "unsupportedLabel": "Not supported:"
+    },
     "origin": {
       "label": "Origin",
       "defined": "✓ Defined",
