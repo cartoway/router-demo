@@ -1,0 +1,197 @@
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import { RoutePoint, RouteResult } from '../types/route';
+import { useTranslation } from '../contexts/TranslationContext';
+import { isDevTransportMode } from '../config/transportModes';
+import { cleanupRouteLayers, filterValidCoordinates, addRouteSourceAndLayers, buildBoundsForRoutes } from '../utils/map';
+
+interface MapRoutesProps {
+  onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
+  origin: RoutePoint | null;
+  destination: RoutePoint | null;
+  routes: RouteResult[];
+  visibleRoutes: string[];
+}
+
+export const MapRoutes: React.FC<MapRoutesProps> = ({
+  onPointSelect,
+  origin,
+  destination,
+  routes,
+  visibleRoutes,
+}) => {
+  const { t } = useTranslation();
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<maplibregl.Map | null>(null);
+  const originMarker = useRef<maplibregl.Marker | null>(null);
+  const destinationMarker = useRef<maplibregl.Marker | null>(null);
+  const hasInitialFit = useRef(false);
+  const isMapLoaded = useRef(false);
+  const currentClickHandler = useRef<((e: maplibregl.MapMouseEvent) => void) | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  const handleOriginMarkerClick = useCallback((e: Event) => {
+    e.stopPropagation();
+    onPointSelect(null, 'origin');
+  }, [onPointSelect]);
+
+  const handleDestinationMarkerClick = useCallback((e: Event) => {
+    e.stopPropagation();
+    onPointSelect(null, 'destination');
+  }, [onPointSelect]);
+
+  const createClickHandler = useCallback(() => {
+    return (e: maplibregl.MapMouseEvent) => {
+      const point: RoutePoint = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+      if (!origin) {
+        onPointSelect(point, 'origin');
+      } else if (!destination) {
+        onPointSelect(point, 'destination');
+      } else {
+        onPointSelect(point, 'destination');
+      }
+    };
+  }, [onPointSelect, origin, destination]);
+
+  useEffect(() => {
+    if (!mapContainer.current || map.current) return;
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: {
+        version: 8,
+        sources: {
+          'osm-tiles': {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors'
+          }
+        },
+        layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm-tiles', minzoom: 0, maxzoom: 19 }]
+      },
+      center: [-0.5792, 44.8378],
+      zoom: 11,
+    });
+    map.current.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: true }), 'top-right');
+    map.current.on('load', () => {
+      isMapLoaded.current = true;
+      setMapReady(true);
+      const clickHandler = createClickHandler();
+      currentClickHandler.current = clickHandler;
+      map.current!.on('click', clickHandler);
+    });
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+        isMapLoaded.current = false;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!map.current || !isMapLoaded.current || !currentClickHandler.current) return;
+    if (currentClickHandler.current) {
+      map.current.off('click', currentClickHandler.current);
+    }
+    const clickHandler = createClickHandler();
+    currentClickHandler.current = clickHandler;
+    map.current.on('click', clickHandler);
+    return () => {
+      if (map.current && currentClickHandler.current) {
+        map.current.off('click', currentClickHandler.current);
+      }
+    };
+  }, [createClickHandler]);
+
+  const createMarkerElement = useCallback((color: string) => {
+    const el = document.createElement('div');
+    el.className = 'custom-marker';
+    el.style.cssText = `width:24px;height:24px;background-color:${color};border-radius:50%;border:3px solid white;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);cursor:pointer;position:absolute;transform:translate(-50%,-50%);pointer-events:auto;`;
+    const innerDot = document.createElement('div');
+    innerDot.style.cssText = `width:8px;height:8px;background-color:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);`;
+    el.appendChild(innerDot);
+    return el;
+  }, []);
+
+  const upsertMarker = useCallback((markerRef: React.MutableRefObject<maplibregl.Marker | null>, point: RoutePoint | null, color: string, onRemove: (e: Event) => void, type: 'origin' | 'destination') => {
+    if (!map.current || !isMapLoaded.current) return;
+    if (markerRef.current) { markerRef.current.remove(); markerRef.current = null; }
+    if (!point) return;
+    const el = createMarkerElement(color);
+    const marker = new maplibregl.Marker({ element: el, anchor: 'center', draggable: true })
+      .setLngLat([point.lng, point.lat]).addTo(map.current);
+    markerRef.current = marker;
+    el.addEventListener('click', onRemove);
+    marker.on('dragend', () => {
+      if (!markerRef.current) return;
+      const lngLat = markerRef.current.getLngLat();
+      onPointSelect({ lat: lngLat.lat, lng: lngLat.lng }, type);
+    });
+  }, [createMarkerElement, onPointSelect]);
+
+  useEffect(() => {
+    if (!map.current || !isMapLoaded.current) return;
+    upsertMarker(originMarker, origin, '#10B981', handleOriginMarkerClick, 'origin');
+    upsertMarker(destinationMarker, destination, '#EF4444', handleDestinationMarkerClick, 'destination');
+  }, [origin, destination, upsertMarker, handleOriginMarkerClick, handleDestinationMarkerClick, mapReady]);
+
+  useEffect(() => {
+    if (!map.current || !mapReady) return;
+    cleanupRouteLayers(map.current);
+    routes.forEach((route, index) => {
+      if (!route.geometry || !visibleRoutes.includes(route.mode)) return;
+      const layerId = `route-${route.mode}-${index}`;
+      try {
+        const coords = route.geometry.coordinates || [];
+        const validCoordinates = filterValidCoordinates(coords);
+        if (validCoordinates.length === 0) return;
+        addRouteSourceAndLayers(map.current!, layerId, route.color, validCoordinates, isDevTransportMode(route.mode));
+      } catch (error) {
+        console.error('Error adding route layer:', error, route);
+      }
+    });
+    if (routes.length > 0 && origin && destination && !hasInitialFit.current) {
+      try {
+        const bounds = buildBoundsForRoutes(routes, visibleRoutes, origin, destination);
+        if (bounds) {
+          map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+          hasInitialFit.current = true;
+        }
+      } catch {}
+    }
+    if (routes.length === 0) {
+      hasInitialFit.current = false;
+    }
+  }, [routes, visibleRoutes, origin, destination, mapReady]);
+
+  const getInstructionText = () => {
+    if (!origin && !destination) return t('map.instructions.selectOrigin');
+    if (origin && !destination) return t('map.instructions.selectDestination');
+    if (origin && destination) return t('map.instructions.modifyDestination');
+    return '';
+  };
+
+  return (
+    <div className="relative h-full">
+      <div ref={mapContainer} className="h-full w-full rounded-lg overflow-hidden shadow-lg" />
+      <div className="hidden lg:block absolute top-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs">
+        <p className="text-sm font-medium text-gray-800">{getInstructionText()}</p>
+        {(origin || destination) && (
+          <p className="text-xs text-gray-600 mt-1">{t('map.instructions.removeMarker')}</p>
+        )}
+      </div>
+      {(origin || destination) && (
+        <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+          <div className="text-xs font-medium text-gray-700 mb-2">{t('map.legend.title')}</div>
+          <div className="space-y-1">
+            {origin && (<div className="flex items-center space-x-2"><div className="w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div><span className="text-xs text-gray-600">{t('map.legend.origin')}</span></div>)}
+            {destination && (<div className="flex items-center space-x-2"><div className="w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div><span className="text-xs text-gray-600">{t('map.legend.destination')}</span></div>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+

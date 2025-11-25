@@ -42,6 +42,20 @@ export interface RouteResult {
   color: string;
 }
 
+export type IsolineDimension = 'time' | 'distance';
+
+export interface IsolineResult {
+  mode: string;
+  dimension: IsolineDimension;
+  size: number;
+  geometry: {
+    type: 'Polygon' | 'MultiPolygon';
+    // GeoJSON polygon/multipolygon coordinates in [lng, lat]
+    coordinates: number[][][] | number[][][][];
+  };
+  color: string;
+}
+
 export interface CartowayFeature {
   properties: {
     router: {

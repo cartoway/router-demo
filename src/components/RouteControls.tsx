@@ -190,7 +190,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
           <div className="bg-gray-50 rounded-lg">
             {/* Address input - origin */}
             <div className="relative">
-              <div className="relative flex-1">
+                <div className="relative flex-1">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white"></span>
                 {origin ? (
                   <div className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm text-gray-700 bg-white select-none flex items-center overflow-hidden truncate">
@@ -206,16 +206,16 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyOriginCoords(); } }}
                   />
                 )}
-                <button
-                  type="button"
-                  onClick={() => onPointSelect(null, 'origin')}
-                  disabled={!origin}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${origin ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
-                  title={t('routeControls.origin.removeTooltip')}
-                >
-                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => onPointSelect(null, 'origin')}
+                    disabled={!origin}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${origin ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                    title={t('routeControls.origin.removeTooltip')}
+                  >
+                    <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+                  </button>
+                </div>
               {!origin && originSuggestions.length > 0 && (
                 <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
                   {parseCoords(originQuery) && (
@@ -246,7 +246,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
           <div className="bg-gray-50 rounded-lg">
             {/* Address input - destination */}
             <div className="mb-2 relative">
-              <div className="relative flex-1">
+                <div className="relative flex-1">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white"></span>
                 {destination ? (
                   <div className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm text-gray-700 bg-white select-none flex items-center overflow-hidden truncate">
@@ -262,16 +262,16 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyDestCoords(); } }}
                   />
                 )}
-                <button
-                  type="button"
-                  onClick={() => onPointSelect(null, 'destination')}
-                  disabled={!destination}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${destination ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
-                  title={t('routeControls.destination.removeTooltip')}
-                >
-                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => onPointSelect(null, 'destination')}
+                    disabled={!destination}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${destination ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                    title={t('routeControls.destination.removeTooltip')}
+                  >
+                    <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+                  </button>
+                </div>
               {!destination && destSuggestions.length > 0 && (
                 <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
                   {parseCoords(destQuery) && (
