@@ -11,6 +11,7 @@
       "motorway": "Autoroutes",
       "toll": "Péages",
       "low_emission_zone": "Zones à faibles émissions",
+      "track": "Chemins",
       "noneSelected": "Aucun mode sélectionné",
       "supportedLabel": "Pris en charge :",
       "unsupportedLabel": "Non pris en charge :"

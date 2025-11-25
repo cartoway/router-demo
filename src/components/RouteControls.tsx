@@ -36,9 +36,9 @@ interface RouteControlsProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
   isCalculating: boolean;
   onApiRequestLog?: (request: ApiRequest) => void;
-  capabilities?: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean }>;
-  options?: { motorway: boolean; toll: boolean; low_emission_zone: boolean };
-  onOptionsChange?: (opts: { motorway: boolean; toll: boolean; low_emission_zone: boolean }) => void;
+  capabilities?: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>;
+  options?: { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean };
+  onOptionsChange?: (opts: { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }) => void;
 }
 
 export const RouteControls: React.FC<RouteControlsProps> = ({
@@ -50,7 +50,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   isCalculating,
   onApiRequestLog,
   capabilities = {},
-  options = { motorway: false, toll: false, low_emission_zone: false },
+  options = { motorway: false, toll: false, low_emission_zone: false, track: false },
   onOptionsChange,
 }) => {
   const { t } = useTranslation();
@@ -341,6 +341,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
             { key: 'motorway' as const, label: t('routeControls.options.motorway') },
             { key: 'toll' as const, label: t('routeControls.options.toll') },
             { key: 'low_emission_zone' as const, label: t('routeControls.options.low_emission_zone') },
+            { key: 'track' as const, label: t('routeControls.options.track') },
           ].map(({ key, label }) => {
             const supportedModes = selectedModes.filter(m => capabilities[m]?.[key]);
             const unsupportedModes = selectedModes.filter(m => !capabilities[m]?.[key]);

@@ -28,6 +28,7 @@ export interface RouteOptions {
   motorway?: boolean;
   toll?: boolean;
   low_emission_zone?: boolean;
+  track?: boolean;
 }
 
 export interface RouteResult {
