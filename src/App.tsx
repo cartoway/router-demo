@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapComponent } from './components/MapComponent';
+import { MapRoutes } from './components/MapRoutes';
 import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
 import { Header } from './components/Header';
@@ -24,10 +24,14 @@ import { useRouteCalculation } from './hooks/useRouteCalculation';
 import { RoutePoint, RouteResult } from './types/route';
 import { ApiRequest } from './types/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBug } from '@fortawesome/free-solid-svg-icons';
+import { faBug, faRoute, faDrawPolygon } from '@fortawesome/free-solid-svg-icons';
 import { ENABLED_TRANSPORT_MODES, TransportMode, TRANSPORT_MODES_MAP, ACTIVE_TRANSPORT_MODES } from './config/transportModes';
+import { Routes, Route, NavLink } from 'react-router-dom';
+import IsolinesPage from './pages/Isolines';
+import { useTranslation } from './contexts/TranslationContext';
 
 function App() {
+  const { t } = useTranslation();
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
   const [destination, setDestination] = useState<RoutePoint | null>(null);
 
@@ -153,6 +157,7 @@ function App() {
   // Keep URL in sync with state
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const isIsolineRoute = window.location.pathname.includes('/isoline');
 
     if (origin) {
       params.set('src', `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`);
@@ -166,10 +171,15 @@ function App() {
       params.delete('dst');
     }
 
-    if (selectedModes.length > 0) {
-      params.set('modes', selectedModes.join(','));
-    } else {
+    if (isIsolineRoute) {
+      // On the isolines page, strip router 'modes' param to avoid interference
       params.delete('modes');
+    } else {
+      if (selectedModes.length > 0) {
+        params.set('modes', selectedModes.join(','));
+      } else {
+        params.delete('modes');
+      }
     }
 
     if (isDevMode) {
@@ -351,74 +361,92 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Header isDevMode={isDevMode} onToggleDevMode={toggleDevMode} />
       {/* Main Content */}
-      <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6 pb-20 lg:pb-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4">
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6 pb-20 lg:pb-0">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4">
 
-          {/* Left Sidebar - Controls */}
-          <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 p-4 lg:p-0">
-            <RouteControls
-              origin={origin}
-              destination={destination}
-              selectedModes={selectedModes}
-              onModeToggle={handleModeToggle}
-              onPointSelect={handlePointSelect}
-              isCalculating={isCalculating}
-              onApiRequestLog={handleApiRequest}
-              capabilities={capabilities}
-              options={routeOptions}
-              onOptionsChange={setRouteOptions}
-            />
-          </div>
+                {/* Left Sidebar - Controls */}
+                <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 p-4 lg:p-0">
+                  <RouteControls
+                    origin={origin}
+                    destination={destination}
+                    selectedModes={selectedModes}
+                    onModeToggle={handleModeToggle}
+                    onPointSelect={handlePointSelect}
+                    isCalculating={isCalculating}
+                    onApiRequestLog={handleApiRequest}
+                    capabilities={capabilities}
+                    options={routeOptions}
+                    onOptionsChange={setRouteOptions}
+                  />
+                </div>
 
-          {/* Main Map Area */}
-          <div className="lg:col-span-6 order-1 lg:order-2">
-            <div className="h-96 lg:h-[calc(100vh-200px)]">
-              <MapComponent
-                onPointSelect={handlePointSelect}
-                origin={origin}
-                destination={destination}
-                routes={routes}
-                visibleRoutes={visibleRoutes}
-              />
+                {/* Main Map Area */}
+                <div className="lg:col-span-6 order-1 lg:order-2">
+                  <div className="h-96 lg:h-[calc(100vh-200px)]">
+                    <MapRoutes
+                      onPointSelect={handlePointSelect}
+                      origin={origin}
+                      destination={destination}
+                      routes={routes}
+                      visibleRoutes={visibleRoutes}
+                    />
+                  </div>
+                </div>
+
+                {/* Right Sidebar - Results */}
+                <div className="lg:col-span-3 space-y-6 order-3 p-4 lg:p-0">
+                  <RouteResults
+                    routes={routes}
+                    selectedModes={selectedModes}
+                    isDevMode={isDevMode}
+                    apiRequests={filteredApiRequests}
+                    onClearApiRequests={clearApiRequests}
+                    onExportApiRequests={exportApiRequests}
+                  />
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg">
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Right Sidebar - Results */}
-          <div className="lg:col-span-3 space-y-6 order-3 p-4 lg:p-0">
-            <RouteResults
-              routes={routes}
-              selectedModes={selectedModes}
-              isDevMode={isDevMode}
-              apiRequests={filteredApiRequests}
-              onClearApiRequests={clearApiRequests}
-              onExportApiRequests={exportApiRequests}
-            />
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg">
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-      </div>
+          }
+        />
+        <Route path="/isoline" element={<IsolinesPage isDevMode={isDevMode} />} />
+      </Routes>
 
       {/* Footer - Mobile only */}
-      <footer className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t py-4 z-10">
+      <footer className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t py-3 z-10">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="text-center text-sm text-gray-500">
-              Powered by{' '}
-              <a
-                href="https://cartoway.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800"
+            {/* Mobile bottom nav */}
+            <nav className="flex items-center gap-6">
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-600'}`
+                }
               >
-                Cartoway
-              </a>
-            </div>
+                <FontAwesomeIcon icon={faRoute} className="h-5 w-5 mb-0.5" />
+                <span>{t('nav.routes')}</span>
+              </NavLink>
+              <NavLink
+                to="/isoline"
+                className={({ isActive }) =>
+                  `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-600'}`
+                }
+              >
+                <FontAwesomeIcon icon={faDrawPolygon} className="h-5 w-5 mb-0.5" />
+                <span>{t('nav.isolines')}</span>
+              </NavLink>
+            </nav>
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
                 <FontAwesomeIcon icon={faBug} className={`h-4 w-4 ${isDevMode ? 'text-red-600' : 'text-gray-400'}`} />
@@ -443,6 +471,18 @@ function App() {
                 </span>
               </button>
             </div>
+          </div>
+          {/* Powered by - small line below the menu */}
+          <div className="mt-1 text-center text-[11px] text-gray-500">
+            Powered by{' '}
+            <a
+              href="https://cartoway.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Cartoway
+            </a>
           </div>
         </div>
       </footer>

@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "Router demo",
-    "subtitle": "Calculateur d'itinéraires multi-modal",
+    "subtitle": {
+      "routes": "Calculateur d'itinéraires multi-modal",
+      "isolines": "Calculateur d'isolignes multi-modal"
+    },
     "poweredBy": "Powered by Cartoway"
   },
   "routeControls": {
@@ -34,6 +37,17 @@
       "title": "Modes de transport",
       "selectMode": "Sélectionnez un mode de transport pour calculer l'itinéraire"
     },
+    "isolines": {
+      "title": "Isolignes",
+      "dimension": "Dimension",
+      "time": "Temps",
+      "distance": "Distance",
+      "size": "Taille",
+      "calculate": "Calculer",
+      "needOrigin": "Sélectionnez d’abord une origine sur la carte",
+      "hint": "Utilise l’origine comme centre. Les modes sélectionnés seront utilisés. Recalcul des isolignes en changeant l'origine.",
+      "maxReached": "Nombre maximal de profils atteint"
+    },
     "status": {
       "calculating": "Calcul en cours..."
     }
@@ -42,6 +56,10 @@
     "title": "Résultats des itinéraires",
     "fastest": "Plus rapide",
     "shortest": "Plus court"
+  },
+  "nav": {
+    "routes": "Itinéraires",
+    "isolines": "Isolignes"
   },
   "map": {
     "instructions": {

@@ -15,12 +15,50 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature } from '../types/route';
-import { ApiRequest } from '../types/api';
+import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature, IsolineResult, IsolineDimension } from '../types/route';
+import type { ApiRequest } from '../types/api';
 import polyline from '@mapbox/polyline';
 
 const ROUTER_BASE_URL = import.meta.env.VITE_ROUTER_API_URL || 'https://router.cartoway.com';
 
+// Module-level cache for capability endpoint (the result is stable across the session)
+type CapabilityRouteEntry = {
+  mode: string;
+  support_motorway?: boolean;
+  support_toll?: boolean;
+  support_low_emission_zone?: boolean;
+  support_track?: boolean;
+};
+type CapabilityIsolineEntry = {
+  mode: string;
+  dimensions?: unknown[];
+};
+type CapabilityResponse = {
+  route?: CapabilityRouteEntry[];
+  isoline?: CapabilityIsolineEntry[];
+};
+let capabilityRawPromise: Promise<CapabilityResponse> | null = null;
+let capabilityRawData: CapabilityResponse | null = null;
+async function fetchCapabilityRaw(apiKey: string): Promise<CapabilityResponse> {
+  if (capabilityRawData) return capabilityRawData;
+  if (capabilityRawPromise) return capabilityRawPromise;
+  const url = `${ROUTER_BASE_URL}/0.1/capability?api_key=${encodeURIComponent(apiKey)}`;
+  capabilityRawPromise = fetch(url, { headers: { 'Accept': 'application/json' } })
+    .then(async (res) => {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return res.json() as Promise<CapabilityResponse>;
+    })
+    .then((data) => {
+      capabilityRawData = data;
+      return data;
+    })
+    .finally(() => {
+      // Keep promise for in-flight dedupe; keep data for subsequent immediate returns
+    });
+  return capabilityRawPromise;
+}
 
 
 interface HttpError extends Error {
@@ -36,6 +74,26 @@ export class RouterApiService {
     this.apiKey = apiKey || import.meta.env.VITE_ROUTER_API_KEY || 'demo';
   }
 
+  // Capability for isolines: which dimensions are available per mode
+  async getIsolineCapabilities(): Promise<Record<string, Array<'time' | 'distance'>>> {
+    const data = await fetchCapabilityRaw(this.apiKey);
+    const map: Record<string, Array<'time' | 'distance'>> = {};
+    const arr = Array.isArray(data?.isoline) ? data.isoline : [];
+    for (const entry of arr) {
+      if (!entry || typeof entry.mode !== 'string') continue;
+      const dims = Array.isArray(entry.dimensions) ? entry.dimensions : [];
+      const normalized = dims
+        .map((d: unknown) => (d === 'time' || d === 'distance' ? d : null))
+        .filter((d: 'time' | 'distance' | null): d is 'time' | 'distance' => d !== null);
+      // Ensure unique, preserve order (prefer time first if present)
+      const unique: Array<'time' | 'distance'> = [];
+      ['time', 'distance'].forEach((d) => {
+        if (normalized.includes(d as 'time' | 'distance')) unique.push(d as 'time' | 'distance');
+      });
+      map[entry.mode] = unique;
+    }
+    return map;
+  }
   setRequestLogger(callback: (request: ApiRequest) => void) {
     this.onRequestLog = callback;
   }
@@ -222,6 +280,136 @@ export class RouterApiService {
     }
   }
 
+  async calculateIsoline(
+    loc: RoutePoint,
+    opts: {
+      mode: string;
+      dimension: IsolineDimension;
+      size: number;
+      speed_multiplier?: number;
+      motorway?: boolean;
+      toll?: boolean;
+      low_emission_zone?: boolean;
+      track?: boolean;
+    }
+  ): Promise<IsolineResult> {
+    const params = new URLSearchParams({
+      api_key: this.apiKey,
+      mode: opts.mode,
+      loc: `${loc.lat},${loc.lng}`,
+      dimension: opts.dimension,
+      size: String(opts.size),
+      speed_multiplier: String(opts.speed_multiplier ?? 1),
+      precision: '6',
+    });
+    // Optional routing-like toggles
+    const caps = await this.getCapabilities();
+    const modeCaps = caps[opts.mode] || { motorway: false, toll: false, low_emission_zone: false, track: false };
+    const sentOptions: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean } = {};
+    if (typeof opts.motorway === 'boolean' && modeCaps.motorway) {
+      params.set('motorway', opts.motorway ? 'true' : 'false');
+      sentOptions.motorway = opts.motorway;
+    }
+    if (typeof opts.toll === 'boolean' && modeCaps.toll) {
+      params.set('toll', opts.toll ? 'true' : 'false');
+      sentOptions.toll = opts.toll;
+    }
+    if (typeof opts.low_emission_zone === 'boolean' && modeCaps.low_emission_zone) {
+      params.set('low_emission_zone', opts.low_emission_zone ? 'true' : 'false');
+      sentOptions.low_emission_zone = opts.low_emission_zone;
+    }
+    if (typeof opts.track === 'boolean' && modeCaps.track) {
+      params.set('track', opts.track ? 'true' : 'false');
+      sentOptions.track = opts.track;
+    }
+
+    const url = `${ROUTER_BASE_URL}/0.1/isoline?${params}`;
+
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
+    const request: ApiRequest = {
+      id: requestId,
+      timestamp: new Date(),
+      method: 'GET',
+      url,
+      requestData: {
+        loc,
+        options: sentOptions,
+        params: Object.fromEntries(params.entries())
+      },
+      status: 'pending'
+    };
+    this.logRequest(request);
+
+    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+    const duration = Date.now() - startTime;
+
+    if (!res.ok) {
+      const errorMessage = this.getDocumentedErrorMessage(res.status);
+      const errorRequest: ApiRequest = { ...request, status: 'rejected', duration, error: errorMessage };
+      this.logRequest(errorRequest);
+      const httpError = new Error(errorMessage) as Error & { isHttpError?: boolean };
+      httpError.isHttpError = true;
+      throw httpError;
+    }
+    const data = await res.json();
+    const successRequest: ApiRequest = { ...request, status: 'success', duration, responseData: data };
+    this.logRequest(successRequest);
+
+    // Expect FeatureCollection with first feature geometry polygon/multipolygon
+    const feature = Array.isArray(data?.features) ? data.features[0] : undefined;
+    const geometry = feature?.geometry;
+
+    // Some backends may return an encoded polyline for the isoline boundary.
+    // Normalize to a GeoJSON Polygon or MultiPolygon with [lng,lat] coordinates.
+    const toLngLat = (arr: [number, number][]) => arr.map(([lat, lng]) => [lng, lat] as [number, number]);
+    const ensureClosedRing = (ring: [number, number][]) => {
+      if (ring.length === 0) return ring;
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        return [...ring, first];
+      }
+      return ring;
+    };
+
+    let normalized:
+      | { type: 'Polygon'; coordinates: number[][][] }
+      | { type: 'MultiPolygon'; coordinates: number[][][][] } = {
+      type: 'Polygon',
+      coordinates: []
+    };
+
+    if (geometry?.polylines && typeof geometry.polylines === 'string') {
+      // Decode the polyline to a ring and wrap as a Polygon
+      try {
+        const decoded = polyline.decode(geometry.polylines, 6) as [number, number][];
+        const ring = ensureClosedRing(toLngLat(decoded));
+        normalized = { type: 'Polygon', coordinates: [ring as unknown as number[][]] };
+      } catch {
+        normalized = { type: 'Polygon', coordinates: [] };
+      }
+    } else if (geometry?.type === 'LineString' && Array.isArray(geometry.coordinates)) {
+      // Convert LineString ring to Polygon
+      const ring = ensureClosedRing(geometry.coordinates as [number, number][]);
+      normalized = { type: 'Polygon', coordinates: [ring as unknown as number[][]] };
+    } else if (geometry?.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+      normalized = { type: 'Polygon', coordinates: geometry.coordinates as number[][][] };
+    } else if (geometry?.type === 'MultiPolygon' && Array.isArray(geometry.coordinates)) {
+      normalized = { type: 'MultiPolygon', coordinates: geometry.coordinates as number[][][][] };
+    } else {
+      normalized = { type: 'Polygon', coordinates: [] };
+    }
+
+    return {
+      mode: opts.mode,
+      dimension: opts.dimension,
+      size: opts.size,
+      geometry: normalized,
+      color: '#3B82F6',
+    };
+  }
+
   async calculateMultipleRoutes(
     origin: RoutePoint,
     destination: RoutePoint,
@@ -260,10 +448,7 @@ export class RouterApiService {
   }
 
   async getCapabilities(): Promise<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>> {
-    const url = `${ROUTER_BASE_URL}/0.1/capability?api_key=${encodeURIComponent(this.apiKey)}`;
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) throw new Error(this.getDocumentedErrorMessage(res.status));
-    const data = await res.json();
+    const data = await fetchCapabilityRaw(this.apiKey);
     const map: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }> = {};
     const arr = Array.isArray(data?.route) ? data.route : [];
     for (const entry of arr) {

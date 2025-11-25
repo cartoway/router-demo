@@ -34,6 +34,17 @@
       "title": "Transport modes",
       "selectMode": "Select a transport mode to calculate the route"
     },
+    "isolines": {
+      "title": "Isolines",
+      "dimension": "Dimension",
+      "time": "Time",
+      "distance": "Distance",
+      "size": "Size",
+      "calculate": "Calculate",
+      "needOrigin": "Select an origin on the map first",
+      "hint": "Uses the origin as center. Current selected modes will be used. Recalculate isolines by changing the origin.",
+      "maxReached": "Maximum number of profiles reached"
+    },
     "status": {
       "calculating": "Calculating..."
     }
@@ -42,6 +53,10 @@
     "title": "Route Results",
     "fastest": "Fastest",
     "shortest": "Shortest"
+  },
+  "nav": {
+    "routes": "Routes",
+    "isolines": "Isolines"
   },
   "map": {
     "instructions": {

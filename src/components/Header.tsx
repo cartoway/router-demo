@@ -19,7 +19,8 @@ import React from 'react';
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from '../contexts/TranslationContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBug } from '@fortawesome/free-solid-svg-icons';
+import { faBug, faRoute, faDrawPolygon } from '@fortawesome/free-solid-svg-icons';
+import { NavLink, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
   isDevMode: boolean;
@@ -28,6 +29,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ isDevMode, onToggleDevMode }) => {
   const { t } = useTranslation();
+  const location = useLocation();
+  const isIsoline = location.pathname.includes('/isoline');
+  const currentTitle = t('app.title');
+  const subTitle = isIsoline ? t('app.subtitle.isolines') : t('app.subtitle.routes');
 
   return (
     <header className="bg-white shadow-sm border-b">
@@ -37,11 +42,35 @@ export const Header: React.FC<HeaderProps> = ({ isDevMode, onToggleDevMode }) =>
             <img src="/favico.svg" alt="Logo" className="h-8 w-auto lg:hidden" />
             <img src="/logo.svg" alt="Logo" className="h-8 w-auto hidden lg:block" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{t('app.title')}</h1>
-              <p className="text-sm text-gray-500">{t('app.subtitle')}</p>
+              <h1 className="text-xl font-bold text-gray-900">{currentTitle}</h1>
+              <p className="text-sm text-gray-500">{subTitle}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <nav className="hidden md:flex items-center space-x-4">
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  `text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`
+                }
+              >
+                <span className="inline-flex items-center gap-2">
+                  <FontAwesomeIcon icon={faRoute} className="h-4 w-4" />
+                  <span>{t('nav.routes') || 'Itinéraires'}</span>
+                </span>
+              </NavLink>
+              <NavLink
+                to="/isoline"
+                className={({ isActive }) =>
+                  `text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`
+                }
+              >
+                <span className="inline-flex items-center gap-2">
+                  <FontAwesomeIcon icon={faDrawPolygon} className="h-4 w-4" />
+                  <span>{t('nav.isolines') || 'Isolignes'}</span>
+                </span>
+              </NavLink>
+            </nav>
             <div className="text-sm text-gray-500 hidden lg:block">
               Powered by{' '}
               <a
