@@ -68,13 +68,14 @@ function App() {
   const prevOrigin = useRef<RoutePoint | null>(null);
   const prevDestination = useRef<RoutePoint | null>(null);
   const prevRoutes = useRef<RouteResult[]>([]);
-  const prevOptions = useRef<{ motorway: boolean; toll: boolean; low_emission_zone: boolean } | null>(null);
+  const prevOptions = useRef<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean } | null>(null);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes, capabilities } = useRouteCalculation();
-  const [routeOptions, setRouteOptions] = useState<{ motorway: boolean; toll: boolean; low_emission_zone: boolean }>({
+  const [routeOptions, setRouteOptions] = useState<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>({
     motorway: false,
     toll: false,
     low_emission_zone: false,
+    track: false,
   });
 
   // Helper: parse coordinate string with separators ':', '_' or ','
@@ -104,6 +105,7 @@ function App() {
     const motorwayParam = params.get('motorway');
     const tollParam = params.get('toll');
     const lezParam = params.get('lez') ?? params.get('low_emission_zone');
+    const trackParam = params.get('track');
     const parseBool = (v: string | null): boolean | null => {
       if (v == null) return null;
       const s = v.toLowerCase();
@@ -138,11 +140,12 @@ function App() {
     const motorwayVal = parseBool(motorwayParam);
     const tollVal = parseBool(tollParam);
     const lezVal = parseBool(lezParam);
-    if (motorwayVal !== null || tollVal !== null || lezVal !== null) {
+    if (motorwayVal !== null || tollVal !== null || lezVal !== null || parseBool(trackParam) !== null) {
       setRouteOptions(prev => ({
         motorway: motorwayVal ?? prev.motorway,
         toll: tollVal ?? prev.toll,
         low_emission_zone: lezVal ?? prev.low_emission_zone,
+        track: (parseBool(trackParam) ?? prev.track),
       }));
     }
   }, []);
@@ -190,6 +193,11 @@ function App() {
       params.set('lez', '1');
     } else {
       params.delete('lez');
+    }
+    if (routeOptions.track) {
+      params.set('track', '1');
+    } else {
+      params.delete('track');
     }
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -276,7 +284,8 @@ function App() {
           return (
             prev.motorway !== curr.motorway ||
             prev.toll !== curr.toll ||
-            prev.low_emission_zone !== curr.low_emission_zone
+          prev.low_emission_zone !== curr.low_emission_zone ||
+          prev.track !== curr.track
           );
         })();
 

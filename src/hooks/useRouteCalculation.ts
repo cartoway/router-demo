@@ -16,7 +16,8 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
-import { RouterApiService, ApiRequest } from '../services/routerApi';
+import { RouterApiService } from '../services/routerApi';
+import type { ApiRequest } from '../types/api';
 import { RoutePoint, RouteResult, CartowayResponse } from '../types/route';
 import { ROUTE_COLORS } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
@@ -25,7 +26,7 @@ export const useRouteCalculation = () => {
   const [routes, setRoutes] = useState<RouteResult[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [capabilities, setCapabilities] = useState<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean }>>({});
+  const [capabilities, setCapabilities] = useState<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>>({});
   const { t } = useTranslation();
 
   // Use useRef to keep the service instance stable across renders
@@ -60,7 +61,7 @@ export const useRouteCalculation = () => {
     destination: RoutePoint,
     modes: string[],
     onRequestLog?: (request: ApiRequest) => void,
-    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; }>
+    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; }>
   ) => {
     if (modes.length === 0 || !routerServiceRef.current) return;
 
@@ -119,7 +120,7 @@ export const useRouteCalculation = () => {
       // Always stop calculating when done
       setIsCalculating(false);
     }
-  }, []);
+  }, [isCalculating, t]);
 
   const clearRoutes = useCallback(() => {
     setRoutes([]);

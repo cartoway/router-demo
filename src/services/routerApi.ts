@@ -96,6 +96,9 @@ export class RouterApiService {
     if (typeof options.low_emission_zone === 'boolean') {
       params.set('low_emission_zone', options.low_emission_zone ? 'true' : 'false');
     }
+    if (typeof options.track === 'boolean') {
+      params.set('track', options.track ? 'true' : 'false');
+    }
 
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
@@ -223,7 +226,7 @@ export class RouterApiService {
     origin: RoutePoint,
     destination: RoutePoint,
     modes: string[],
-    commonOptions?: Partial<Pick<RouteOptions, 'motorway' | 'toll' | 'low_emission_zone'>>
+    commonOptions?: Partial<Pick<RouteOptions, 'motorway' | 'toll' | 'low_emission_zone' | 'track'>>
   ): Promise<CartowayResponse[]> {
     const promises = modes.map(mode =>
       this.calculateRoute(origin, destination, {
@@ -256,12 +259,12 @@ export class RouterApiService {
     return successfulResults;
   }
 
-  async getCapabilities(): Promise<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean }>> {
+  async getCapabilities(): Promise<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>> {
     const url = `${ROUTER_BASE_URL}/0.1/capability?api_key=${encodeURIComponent(this.apiKey)}`;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error(this.getDocumentedErrorMessage(res.status));
     const data = await res.json();
-    const map: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean }> = {};
+    const map: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }> = {};
     const arr = Array.isArray(data?.route) ? data.route : [];
     for (const entry of arr) {
       if (!entry || typeof entry.mode !== 'string') continue;
@@ -269,6 +272,7 @@ export class RouterApiService {
         motorway: Boolean(entry.support_motorway),
         toll: Boolean(entry.support_toll),
         low_emission_zone: Boolean(entry.support_low_emission_zone),
+        track: Boolean(entry.support_track),
       };
     }
     return map;

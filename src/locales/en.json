@@ -11,6 +11,7 @@
       "motorway": "Motorways",
       "toll": "Tolls",
       "low_emission_zone": "Low emission zones",
+      "track": "Tracks",
       "noneSelected": "No mode selected",
       "supportedLabel": "Supported:",
       "unsupportedLabel": "Not supported:"
