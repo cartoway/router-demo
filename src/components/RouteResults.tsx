@@ -49,6 +49,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
 
   // Filtrer les routes selon les modes sélectionnés
   const filteredRoutes = routes.filter(route => selectedModes.includes(route.mode));
+  const validRoutes = filteredRoutes.filter(r => !r.error);
 
   if (filteredRoutes.length === 0 && !isDevMode) {
     return null;
@@ -86,7 +87,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
               return (
                 <div
                   key={route.mode}
-                  className={`border-2 rounded-lg p-3 sm:p-4 transition-all duration-200 border-gray-300 bg-white shadow-sm`}
+                  className={`border-2 rounded-lg p-3 sm:p-4 transition-all duration-200 ${route.error ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'} shadow-sm`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2 sm:space-x-3">
@@ -100,28 +101,34 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                      <span className="text-gray-700">
-                        {formatDuration(route.duration)}
-                      </span>
+                  {!route.error ? (
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-700">
+                          {formatDuration(route.duration)}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-700">
+                          {formatDistance(route.distance)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                      <span className="text-gray-700">
-                        {formatDistance(route.distance)}
-                      </span>
+                  ) : (
+                    <div className="text-xs text-gray-600">
+                      {t('errors.calculationError')}
                     </div>
-                  </div>
+                  )}
 
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {route.duration === Math.min(...filteredRoutes.map(r => r.duration)) && (
+                    {!route.error && validRoutes.length > 0 && route.duration === Math.min(...validRoutes.map(r => r.duration)) && (
                       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         {t('routeResults.fastest')}
                       </div>
                     )}
-                    {route.distance === Math.min(...filteredRoutes.map(r => r.distance)) && (
+                    {!route.error && validRoutes.length > 0 && route.distance === Math.min(...validRoutes.map(r => r.distance)) && (
                       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {t('routeResults.shortest')}
                       </div>

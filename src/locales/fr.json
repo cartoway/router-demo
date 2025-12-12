@@ -93,7 +93,7 @@
     "requestError": "Erreur de requête",
     "apiMessage": "Message API :",
     "noRoutesFound": "Aucun itinéraire trouvé pour les modes sélectionnés",
-    "calculationError": "Erreur lors du calcul des itinéraires. Vérifiez votre connexion.",
+    "calculationError": "Erreur lors du calcul d'itinéraire.",
     "requestSkipped": "Requête ignorée - précédemment échouée",
     "http400": "Paramètres requis manquants",
     "http401": "Votre clé API n'est pas valide",

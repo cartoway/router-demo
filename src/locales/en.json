@@ -90,7 +90,7 @@
     "requestError": "Request Error",
     "apiMessage": "API Message:",
     "noRoutesFound": "No routes found for selected modes",
-    "calculationError": "Error calculating routes. Check your connection.",
+    "calculationError": "Error calculating route.",
     "requestSkipped": "Request skipped - previously failed",
     "http400": "Some required parameters are missing",
     "http401": "Your api_key is not valid",

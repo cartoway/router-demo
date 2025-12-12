@@ -34,6 +34,8 @@ export const useRouteCalculation = () => {
   if (!routerServiceRef.current) {
     routerServiceRef.current = new RouterApiService();
   }
+  const lastRouteCalcKeyRef = useRef<string>('');
+  const isCalculatingRef = useRef<boolean>(false);
 
   // Set translator for the service
   React.useEffect(() => {
@@ -66,7 +68,18 @@ export const useRouteCalculation = () => {
     if (modes.length === 0 || !routerServiceRef.current) return;
 
     // Prevent multiple simultaneous calculations
-    if (isCalculating) {
+    if (isCalculatingRef.current) {
+      return;
+    }
+
+    // Build a stable key to avoid duplicate (and looping) recalculations
+    const optsKey =
+      options
+        ? `${options.motorway ? 1 : 0}${options.toll ? 1 : 0}${options.low_emission_zone ? 1 : 0}${options.track ? 1 : 0}`
+        : '0000';
+    const modesKey = [...modes].sort().join(',');
+    const key = `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}->${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}|${modesKey}|${optsKey}`;
+    if (lastRouteCalcKeyRef.current === key) {
       return;
     }
 
@@ -75,52 +88,80 @@ export const useRouteCalculation = () => {
       routerServiceRef.current.setRequestLogger(onRequestLog);
     }
 
+    isCalculatingRef.current = true;
     setIsCalculating(true);
     setError(null);
 
     try {
-      const results = await routerServiceRef.current.calculateMultipleRoutes(origin, destination, modes, options);
+      // Calculate per mode to capture partial failures
+      const settled = await Promise.allSettled(
+        modes.map(async (mode) => {
+          const res: CartowayResponse = await routerServiceRef.current!.calculateRoute(
+            origin,
+            destination,
+            { mode, geometry: true, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track }
+          );
+          return { mode, res };
+        })
+      );
 
-      const routeResults: RouteResult[] = [];
+      const nextResults: RouteResult[] = [];
+      const successes: Array<{ mode: string; res: CartowayResponse }> = [];
+      const failures: Array<{ mode: string; reason: unknown }> = [];
 
-      results.forEach((result: CartowayResponse, index: number) => {
-        const mode = modes[index];
+      settled.forEach((r, idx) => {
+        if (r.status === 'fulfilled') {
+          successes.push(r.value);
+        } else {
+          failures.push({ mode: modes[idx], reason: r.reason });
+        }
+      });
 
-        // Check if the response has features
-        if (result.features && result.features.length > 0) {
-          const feature = result.features[0]; // Take the first feature
-
-          // Convert RouterApi feature to RouteResult format
+      // Build RouteResult for successes
+      successes.forEach(({ mode, res }) => {
+        if (res.features && res.features.length > 0) {
+          const feature = res.features[0];
           const routeResult = routerServiceRef.current!.convertToRouteResult(feature, mode);
-
-          routeResults.push({
+          nextResults.push({
             ...routeResult,
             color: ROUTE_COLORS[mode] || '#6B7280',
           });
         }
       });
 
-      // Add new routes to existing ones instead of replacing
-      setRoutes(prevRoutes => {
-        // Remove any existing routes for the modes being calculated
-        const filteredRoutes = prevRoutes.filter(route => !modes.includes(route.mode));
-        // Add new routes
-        return [...filteredRoutes, ...routeResults];
+      // Add error placeholders for failures
+      failures.forEach(({ mode, reason }) => {
+        const message = reason instanceof Error ? reason.message : t('errors.calculationError');
+        nextResults.push({
+          mode,
+          duration: 0,
+          distance: 0,
+          color: ROUTE_COLORS[mode] || '#6B7280',
+          error: true,
+          errorMessage: message,
+        });
       });
 
-      if (routeResults.length === 0) {
+      // Merge with previous, replacing any entries for the calculated modes
+      setRoutes(prevRoutes => {
+        const filteredRoutes = prevRoutes.filter(route => !modes.includes(route.mode));
+        return [...filteredRoutes, ...nextResults];
+      });
+
+      if (nextResults.length === 0) {
         setError(t('errors.noRoutesFound'));
+      } else if (failures.length > 0 && successes.length === 0) {
+        setError(t('errors.allRoutesFailed'));
+      } else {
+        setError(null);
       }
-    } catch (err) {
-      // Use the specific error message from the API if available
-      const errorMessage = err instanceof Error ? err.message : t('errors.calculationError');
-      setError(errorMessage);
-      setRoutes([]);
+      lastRouteCalcKeyRef.current = key;
     } finally {
       // Always stop calculating when done
+      isCalculatingRef.current = false;
       setIsCalculating(false);
     }
-  }, [isCalculating, t]);
+  }, [t]);
 
   const clearRoutes = useCallback(() => {
     setRoutes([]);
