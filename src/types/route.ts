@@ -40,6 +40,9 @@ export interface RouteResult {
     type: string;
   };
   color: string;
+  // When present, indicates this entry represents a failed calculation for this mode
+  error?: boolean;
+  errorMessage?: string;
 }
 
 export type IsolineDimension = 'time' | 'distance';

@@ -127,6 +127,8 @@ export const useIsolineCalculation = () => {
       lastCalcKeyRef.current = key;
     } catch (e) {
       setIsolineError(e instanceof Error ? e.message : 'Unknown isoline error');
+      // Avoid re-triggering the same failed request in a loop
+      lastCalcKeyRef.current = key;
     } finally {
       setIsCalculatingIsoline(false);
     }
