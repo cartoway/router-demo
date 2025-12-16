@@ -144,18 +144,27 @@ export class RouterApiService {
       precision: '6'
     });
 
-    // Append optional toggles if provided
-    if (typeof options.motorway === 'boolean') {
+    // Filter options based on profile capabilities
+    const caps = await this.getCapabilities();
+    const modeCaps = caps[options.mode] || { motorway: false, toll: false, low_emission_zone: false, track: false };
+    const sentOptions: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean } = {};
+
+    // Append optional toggles only if supported by the profile
+    if (typeof options.motorway === 'boolean' && modeCaps.motorway) {
       params.set('motorway', options.motorway ? 'true' : 'false');
+      sentOptions.motorway = options.motorway;
     }
-    if (typeof options.toll === 'boolean') {
+    if (typeof options.toll === 'boolean' && modeCaps.toll) {
       params.set('toll', options.toll ? 'true' : 'false');
+      sentOptions.toll = options.toll;
     }
-    if (typeof options.low_emission_zone === 'boolean') {
+    if (typeof options.low_emission_zone === 'boolean' && modeCaps.low_emission_zone) {
       params.set('low_emission_zone', options.low_emission_zone ? 'true' : 'false');
+      sentOptions.low_emission_zone = options.low_emission_zone;
     }
-    if (typeof options.track === 'boolean') {
+    if (typeof options.track === 'boolean' && modeCaps.track) {
       params.set('track', options.track ? 'true' : 'false');
+      sentOptions.track = options.track;
     }
 
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -171,7 +180,7 @@ export class RouterApiService {
       requestData: {
         origin,
         destination,
-        options,
+        options: { ...options, ...sentOptions },
         params: Object.fromEntries(params.entries())
       },
       status: 'pending'
