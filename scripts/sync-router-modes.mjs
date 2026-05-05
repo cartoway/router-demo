@@ -39,7 +39,7 @@ const KNOWN_MODES = envEnabled && envEnabled.trim().length > 0
   ? envEnabled.split(',').map(s => s.trim()).filter(Boolean)
   : [
       'car', 'cargo_bike', 'scooter', 'van',
-      'truck_19', 'truck_75', 'truck_12', 'truck_26', 'truck_32', 'truck_44',
+      'truck_75', 'truck_10', 'truck_12', 'truck_19', 'truck_26', 'truck_32', 'truck_44',
       'bicycle', 'foot'
     ];
 
