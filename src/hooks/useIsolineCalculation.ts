@@ -4,7 +4,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { RouterApiService } from '../services/routerApi';
 import type { ApiRequest } from '../types/api';
-import { IsolineResult, IsolineDimension, RoutePoint } from '../types/route';
+import { IsolineResult, Dimension, RoutePoint } from '../types/route';
 import { ROUTE_COLORS } from '../config/transportModes';
 
 export const useIsolineCalculation = () => {
@@ -28,7 +28,7 @@ export const useIsolineCalculation = () => {
     }
   }, []);
 
-  const calculateIsolines = useCallback(async (loc: RoutePoint, modes: string[], dimension: IsolineDimension, size: number, commonOptions?: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean }) => {
+  const calculateIsolines = useCallback(async (loc: RoutePoint, modes: string[], dimension: Dimension, size: number, commonOptions?: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean }) => {
     if (modes.length === 0 || !routerServiceRef.current) return;
     if (isCalculatingIsoline) return;
     const optsKey = commonOptions ? `${commonOptions.motorway ? 1 : 0}${commonOptions.toll ? 1 : 0}${commonOptions.low_emission_zone ? 1 : 0}${commonOptions.track ? 1 : 0}` : '0000';
@@ -65,7 +65,7 @@ export const useIsolineCalculation = () => {
   }, [isCalculatingIsoline]);
 
   // Calculate a set of heterogeneous isolines (different mode/dimension/size)
-  const calculateIsolineItems = useCallback(async (loc: RoutePoint, items: Array<{ mode: string; dimension: IsolineDimension; size: number }>, commonOptions?: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean }) => {
+  const calculateIsolineItems = useCallback(async (loc: RoutePoint, items: Array<{ mode: string; dimension: Dimension; size: number }>, commonOptions?: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean }) => {
     if (!routerServiceRef.current) return;
     if (items.length === 0) { setIsolines([]); return; }
     // Build a stable cache key to avoid duplicate recalculations at same origin with same items
@@ -105,12 +105,12 @@ export const useIsolineCalculation = () => {
     }
   }, []);
 
-  const removeIsoline = useCallback((mode: string, dimension: IsolineDimension, size: number) => {
+  const removeIsoline = useCallback((mode: string, dimension: Dimension, size: number) => {
     setIsolines(prev => prev.filter(iso => !(iso.mode === mode && iso.dimension === dimension && iso.size === size)));
   }, []);
 
   // Calculate only one item (used on add) without recalculating existing ones
-  const calculateIsolineForItem = useCallback(async (loc: RoutePoint, item: { mode: string; dimension: IsolineDimension; size: number }, commonOptions?: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean }) => {
+  const calculateIsolineForItem = useCallback(async (loc: RoutePoint, item: { mode: string; dimension: Dimension; size: number }, commonOptions?: { motorway?: boolean; toll?: boolean; low_emission_zone?: boolean; track?: boolean }) => {
     if (!routerServiceRef.current) return;
     const optsKey = commonOptions ? `${commonOptions.motorway ? 1 : 0}${commonOptions.toll ? 1 : 0}${commonOptions.low_emission_zone ? 1 : 0}${commonOptions.track ? 1 : 0}` : '0000';
     const key = `${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}|${item.mode}:${item.dimension}:${item.size}|${optsKey}`;

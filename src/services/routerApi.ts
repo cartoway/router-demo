@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature, IsolineResult, IsolineDimension } from '../types/route';
+import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature, IsolineResult, Dimension } from '../types/route';
 import type { ApiRequest } from '../types/api';
 import polyline from '@mapbox/polyline';
 
@@ -293,7 +293,7 @@ export class RouterApiService {
     loc: RoutePoint,
     opts: {
       mode: string;
-      dimension: IsolineDimension;
+      dimension: Dimension;
       size: number;
       speed_multiplier?: number;
       motorway?: boolean;

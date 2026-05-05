@@ -45,11 +45,11 @@ export interface RouteResult {
   errorMessage?: string;
 }
 
-export type IsolineDimension = 'time' | 'distance';
+export type Dimension = 'time' | 'distance';
 
 export interface IsolineResult {
   mode: string;
-  dimension: IsolineDimension;
+  dimension: Dimension;
   size: number;
   geometry: {
     type: 'Polygon' | 'MultiPolygon';
