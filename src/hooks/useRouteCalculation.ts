@@ -63,7 +63,7 @@ export const useRouteCalculation = () => {
     destination: RoutePoint,
     modes: string[],
     onRequestLog?: (request: ApiRequest) => void,
-    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; }>
+    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; dimension: 'time' | 'distance'; }>
   ) => {
     if (modes.length === 0 || !routerServiceRef.current) return;
 
@@ -75,8 +75,8 @@ export const useRouteCalculation = () => {
     // Build a stable key to avoid duplicate (and looping) recalculations
     const optsKey =
       options
-        ? `${options.motorway ? 1 : 0}${options.toll ? 1 : 0}${options.low_emission_zone ? 1 : 0}${options.track ? 1 : 0}`
-        : '0000';
+        ? `${options.motorway ? 1 : 0}${options.toll ? 1 : 0}${options.low_emission_zone ? 1 : 0}${options.track ? 1 : 0}|${options.dimension ?? 'time'}`
+        : '0000|time';
     const modesKey = [...modes].sort().join(',');
     const key = `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}->${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}|${modesKey}|${optsKey}`;
     if (lastRouteCalcKeyRef.current === key) {
@@ -99,7 +99,7 @@ export const useRouteCalculation = () => {
           const res: CartowayResponse = await routerServiceRef.current!.calculateRoute(
             origin,
             destination,
-            { mode, geometry: true, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track }
+            { mode, geometry: true, dimension: options?.dimension, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track }
           );
           return { mode, res };
         })

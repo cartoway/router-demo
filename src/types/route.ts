@@ -25,6 +25,7 @@ export interface RouteOptions {
   mode: string;
   optimize?: boolean;
   geometry?: boolean;
+  dimension?: Dimension;
   motorway?: boolean;
   toll?: boolean;
   low_emission_zone?: boolean;

@@ -21,7 +21,7 @@ import { RouteControls } from './components/RouteControls';
 import { RouteResults } from './components/RouteResults';
 import { Header } from './components/Header';
 import { useRouteCalculation } from './hooks/useRouteCalculation';
-import { RoutePoint, RouteResult } from './types/route';
+import { RoutePoint, RouteResult, Dimension } from './types/route';
 import { ApiRequest } from './types/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBug, faRoute, faDrawPolygon } from '@fortawesome/free-solid-svg-icons';
@@ -73,6 +73,7 @@ function App() {
   const prevDestination = useRef<RoutePoint | null>(null);
   const prevRoutes = useRef<RouteResult[]>([]);
   const prevOptions = useRef<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean } | null>(null);
+  const prevDimension = useRef<Dimension>('time');
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes, capabilities } = useRouteCalculation();
   const [routeOptions, setRouteOptions] = useState<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>({
@@ -81,6 +82,7 @@ function App() {
     low_emission_zone: false,
     track: false,
   });
+  const [routeDimension, setRouteDimension] = useState<Dimension>('time');
 
   // Helper: parse coordinate string with separators ':', '_' or ','
   const parseLatLng = (value: string | null): RoutePoint | null => {
@@ -152,6 +154,12 @@ function App() {
         track: (parseBool(trackParam) ?? prev.track),
       }));
     }
+
+    // Init dimension from URL
+    const dimParam = params.get('dimension');
+    if (dimParam === 'distance') {
+      setRouteDimension('distance');
+    }
   }, []);
 
   // Keep URL in sync with state
@@ -210,9 +218,18 @@ function App() {
       params.delete('track');
     }
 
+    // Sync dimension: omit when 'time' (the default)
+    if (!isIsolineRoute) {
+      if (routeDimension === 'distance') {
+        params.set('dimension', 'distance');
+      } else {
+        params.delete('dimension');
+      }
+    }
+
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [origin, destination, selectedModes, isDevMode, routeOptions]);
+  }, [origin, destination, selectedModes, isDevMode, routeOptions, routeDimension]);
 
   // Handle API request logging
   const handleApiRequest = useCallback((request: ApiRequest) => {
@@ -295,13 +312,14 @@ function App() {
             prev.motorway !== curr.motorway ||
             prev.toll !== curr.toll ||
           prev.low_emission_zone !== curr.low_emission_zone ||
-          prev.track !== curr.track
+          prev.track !== curr.track ||
+          prevDimension.current !== routeDimension
           );
         })();
 
         if (pointsChanged || optionsChanged) {
           // Recalculate all routes when points change
-          calculateRoutes(origin, destination, selectedModes, handleApiRequest, routeOptions);
+          calculateRoutes(origin, destination, selectedModes, handleApiRequest, { ...routeOptions, dimension: routeDimension });
         } else {
           // Check if we need to calculate new modes
           const existingModes = prevRoutes.current.map(route => route.mode);
@@ -309,7 +327,7 @@ function App() {
 
           if (newModes.length > 0) {
             // Calculate only new routes
-            calculateRoutes(origin, destination, newModes, handleApiRequest, routeOptions);
+            calculateRoutes(origin, destination, newModes, handleApiRequest, { ...routeOptions, dimension: routeDimension });
           }
         }
 
@@ -323,13 +341,14 @@ function App() {
         prevOrigin.current = origin;
         prevDestination.current = destination;
         prevOptions.current = routeOptions;
+        prevDimension.current = routeDimension;
       } else {
         // Clear routes if no modes are selected
         clearRoutes();
         setVisibleRoutes([]);
       }
     }
-  }, [origin, destination, selectedModes, routeOptions, routes, calculateRoutes, clearRoutes, handleApiRequest]);
+}, [origin, destination, selectedModes, routeOptions, routeDimension, routes, calculateRoutes, clearRoutes, handleApiRequest]);
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {
@@ -381,6 +400,8 @@ function App() {
                     capabilities={capabilities}
                     options={routeOptions}
                     onOptionsChange={setRouteOptions}
+                    dimension={routeDimension}
+                    onDimensionChange={setRouteDimension}
                   />
                 </div>
 

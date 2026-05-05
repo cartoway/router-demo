@@ -22,7 +22,7 @@ import {
   faXmark,
   faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
-import { RoutePoint } from '../types/route';
+import { RoutePoint, Dimension } from '../types/route';
 import { ENABLED_TRANSPORT_MODES, getModeLabel } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 import { geocodeSearch, GeocodeSuggestion } from '../services/geocoderApi';
@@ -39,6 +39,8 @@ interface RouteControlsProps {
   capabilities?: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>;
   options?: { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean };
   onOptionsChange?: (opts: { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }) => void;
+  dimension?: Dimension;
+  onDimensionChange?: (d: Dimension) => void;
 }
 
 export const RouteControls: React.FC<RouteControlsProps> = ({
@@ -52,6 +54,8 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   capabilities = {},
   options = { motorway: false, toll: false, low_emission_zone: false, track: false },
   onOptionsChange,
+  dimension = 'time',
+  onDimensionChange,
 }) => {
   const { t } = useTranslation();
 
@@ -317,6 +321,29 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
             >
               <FontAwesomeIcon icon={Icon} className="h-3 w-3 sm:h-4 sm:w-4" style={{ color: selectedModes.includes(id) ? color : undefined }} />
               <span className="text-xs sm:text-sm font-medium">{getModeLabel(id, t)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dimension selector */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-700 mb-2 sm:mb-3">{t('routeControls.isolines.dimension')}</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {(['time', 'distance'] as Dimension[]).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => onDimensionChange && onDimensionChange(d)}
+              className={`flex items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 ${
+                dimension === d
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <span className="text-xs sm:text-sm font-medium">
+                {d === 'time' ? t('routeControls.isolines.time') : t('routeControls.isolines.distance')}
+              </span>
             </button>
           ))}
         </div>

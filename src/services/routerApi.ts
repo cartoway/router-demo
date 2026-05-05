@@ -141,6 +141,7 @@ export class RouterApiService {
       mode: options.mode,
       locs: locs,
       geometry: options.geometry ? 'true' : 'false',
+      dimension: options.dimension ?? 'time',
       precision: '6'
     });
 
