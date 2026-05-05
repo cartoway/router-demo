@@ -109,7 +109,7 @@ async function main() {
     console.log(envLine);
     console.log('\nReports written to scripts/routerModes.json and src/config/unknownModes.json');
   } catch (err) {
-    console.error('Failed to fetch capability:', err?.message || String(err));
+    console.error('Failed to fetch capability from: ', url, err?.message || String(err));
     process.exit(1);
   }
 }
