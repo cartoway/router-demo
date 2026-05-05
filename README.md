@@ -24,7 +24,7 @@ docker-compose up -d
 docker build -t router-demo .
 
 # Start the container
-docker run -d -p 3000:80 --name router-demo router-demo
+docker run --rm -p 3000:80 router-demo
 
 # The application will be available at http://localhost:3000
 ```
