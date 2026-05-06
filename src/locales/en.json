@@ -69,6 +69,11 @@
       "title": "Legend",
       "origin": "Origin",
       "destination": "Destination"
+    },
+    "overlays": {
+      "title": "Layers",
+      "lez": "Low emission zones",
+      "ltz": "Limited traffic zones"
     }
   },
   "transportModes": {

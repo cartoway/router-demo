@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { RoutePoint } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
+import { addMapOverlay, removeMapOverlay } from '../utils/map';
 
 interface MapIsolinesProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin') => void;
@@ -25,6 +26,7 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
   const originMarker = useRef<maplibregl.Marker | null>(null);
   const isMapLoaded = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const [overlays, setOverlays] = useState<{ lez: boolean; ltz: boolean }>({ lez: false, ltz: false });
 
   const createClickHandler = useCallback(() => {
     return (e: maplibregl.MapMouseEvent) => {
@@ -107,11 +109,41 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
     });
   }, [isolines, mapReady]);
 
+  const OVERLAY_CONFIGS = [
+    { key: 'lez' as const, url: 'https://maps.cartoway.com/styles/low_emission_zone/style.json', prefix: 'overlay-lez-' },
+    { key: 'ltz' as const, url: 'https://maps.cartoway.com/styles/limited_traffic_zone/style.json', prefix: 'overlay-ltz-' },
+  ];
+
+  useEffect(() => {
+    if (!map.current || !mapReady) return;
+    OVERLAY_CONFIGS.forEach(({ key, url, prefix }) => {
+      if (overlays[key]) {
+        addMapOverlay(map.current!, url, prefix).catch(() => {});
+      } else {
+        removeMapOverlay(map.current!, prefix);
+      }
+    });
+  }, [overlays, mapReady]);
+
   return (
     <div className="relative h-full">
       <div ref={mapContainer} className="h-full w-full rounded-lg overflow-hidden shadow-lg" />
       <div className="hidden lg:block absolute top-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs">
         <p className="text-sm font-medium text-gray-800">{t('map.instructions.selectOrigin')}</p>
+      </div>
+      <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-2 shadow-lg space-y-1">
+        <p className="text-xs font-semibold text-gray-600 mb-1">{t('map.overlays.title')}</p>
+        {OVERLAY_CONFIGS.map(({ key }) => (
+          <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={overlays[key]}
+              onChange={() => setOverlays(prev => ({ ...prev, [key]: !prev[key] }))}
+              className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-700">{t(`map.overlays.${key}`)}</span>
+          </label>
+        ))}
       </div>
     </div>
   );

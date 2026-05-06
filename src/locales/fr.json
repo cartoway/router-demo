@@ -72,6 +72,11 @@
       "title": "Légende",
       "origin": "Origine",
       "destination": "Destination"
+    },
+    "overlays": {
+      "title": "Couches",
+      "lez": "Zones à faibles émissions",
+      "ltz": "Zones à trafic limité"
     }
   },
   "transportModes": {

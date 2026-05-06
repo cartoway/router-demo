@@ -100,6 +100,42 @@ export function addRouteSourceAndLayers(
   });
 }
 
+export async function addMapOverlay(map: maplibregl.Map, url: string, prefix: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch overlay style: ${response.status}`);
+  const style = await response.json();
+  for (const [id, source] of Object.entries(style.sources || {})) {
+    const prefixedId = prefix + id;
+    if (!map.getSource(prefixedId)) {
+      map.addSource(prefixedId, source as maplibregl.SourceSpecification);
+    }
+  }
+  for (const layer of (style.layers || []) as maplibregl.LayerSpecification[]) {
+    const prefixedLayerId = prefix + layer.id;
+    if (!map.getLayer(prefixedLayerId)) {
+      const modifiedLayer: maplibregl.LayerSpecification = {
+        ...layer,
+        id: prefixedLayerId,
+        ...((layer as any).source ? { source: prefix + (layer as any).source } : {}),
+      } as maplibregl.LayerSpecification;
+      map.addLayer(modifiedLayer);
+    }
+  }
+}
+
+export function removeMapOverlay(map: maplibregl.Map, prefix: string): void {
+  try {
+    const style = map.getStyle();
+    if (!style) return;
+    (style.layers || []).forEach((layer) => {
+      if (layer.id.startsWith(prefix) && map.getLayer(layer.id)) map.removeLayer(layer.id);
+    });
+    Object.keys((style as any).sources || {}).forEach((id) => {
+      if (id.startsWith(prefix) && map.getSource(id)) map.removeSource(id);
+    });
+  } catch {}
+}
+
 export function buildBoundsForRoutes(
   routes: RouteResult[],
   visibleModes: string[],
