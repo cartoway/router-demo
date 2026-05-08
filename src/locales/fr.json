@@ -76,7 +76,9 @@
     "overlays": {
       "title": "Couches",
       "lez": "Zones à faibles émissions",
-      "ltz": "Zones à trafic limité"
+      "ltz": "Zones à trafic limité",
+      "truck_restrictions": "Restrictions poids lourds",
+      "charging_station": "Bornes de recharge"
     }
   },
   "transportModes": {

@@ -73,7 +73,9 @@
     "overlays": {
       "title": "Layers",
       "lez": "Low emission zones",
-      "ltz": "Limited traffic zones"
+      "ltz": "Limited traffic zones",
+      "truck_restrictions": "Truck restrictions",
+      "charging_station": "Charging stations"
     }
   },
   "transportModes": {

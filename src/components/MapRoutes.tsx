@@ -29,7 +29,7 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
   const isMapLoaded = useRef(false);
   const currentClickHandler = useRef<((e: maplibregl.MapMouseEvent) => void) | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [overlays, setOverlays] = useState<{ lez: boolean; ltz: boolean }>({ lez: false, ltz: false });
+  const [overlays, setOverlays] = useState<{ lez: boolean; ltz: boolean; truck_restrictions: boolean; charging_station: boolean }>({ lez: false, ltz: false, truck_restrictions: false, charging_station: false });
 
   const handleOriginMarkerClick = useCallback((e: Event) => {
     e.stopPropagation();
@@ -158,6 +158,8 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
   const OVERLAY_CONFIGS = [
     { key: 'lez' as const, url: 'https://maps.cartoway.com/styles/low_emission_zone/style.json', prefix: 'overlay-lez-' },
     { key: 'ltz' as const, url: 'https://maps.cartoway.com/styles/limited_traffic_zone/style.json', prefix: 'overlay-ltz-' },
+    { key: 'truck_restrictions' as const, url: 'https://maps.cartoway.com/styles/truck-restrictions/style.json', prefix: 'overlay-truck-restrictions-' },
+    { key: 'charging_station' as const, url: 'https://maps.cartoway.com/styles/charching_station/style.json', prefix: 'overlay-charging-station-' },
   ];
 
   useEffect(() => {
