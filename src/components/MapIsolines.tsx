@@ -39,7 +39,7 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
     if (!mapContainer.current || map.current) return;
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://maps.cartoway.com/styles/klokantech-basic/style.json',
+      style: 'https://maps.cartoway.com/styles/osm-openmaptiles-gl-style/style.json',
       center: [-0.5792, 44.8378],
       zoom: 11,
     });
