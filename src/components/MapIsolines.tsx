@@ -131,19 +131,31 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
       <div className="hidden lg:block absolute top-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs">
         <p className="text-sm font-medium text-gray-800">{t('map.instructions.selectOrigin')}</p>
       </div>
-      <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-2 shadow-lg space-y-1">
-        <p className="text-xs font-semibold text-gray-600 mb-1">{t('map.overlays.title')}</p>
-        {OVERLAY_CONFIGS.map(({ key }) => (
-          <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={overlays[key]}
-              onChange={() => setOverlays(prev => ({ ...prev, [key]: !prev[key] }))}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-xs text-gray-700">{t(`map.overlays.${key}`)}</span>
-          </label>
-        ))}
+      <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg p-3 shadow-lg space-y-2 min-w-[130px]">
+        {origin && (
+          <>
+            <div className="text-xs font-semibold text-gray-700">{t('map.legend.title')}</div>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+              <span className="text-xs text-gray-600">{t('map.legend.origin')}</span>
+            </div>
+            <hr className="border-gray-200" />
+          </>
+        )}
+        <div className="text-xs font-semibold text-gray-700">{t('map.overlays.title')}</div>
+        <div className="space-y-1">
+          {OVERLAY_CONFIGS.map(({ key }) => (
+            <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={overlays[key]}
+                onChange={() => setOverlays(prev => ({ ...prev, [key]: !prev[key] }))}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-xs text-gray-700">{t(`map.overlays.${key}`)}</span>
+            </label>
+          ))}
+        </div>
       </div>
     </div>
   );
