@@ -39,8 +39,8 @@ interface RouteControlsProps {
   capabilities?: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>;
   options?: { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean };
   onOptionsChange?: (opts: { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }) => void;
-  dimension?: Dimension;
-  onDimensionChange?: (d: Dimension) => void;
+  dimensions?: Dimension[];
+  onDimensionChange?: (d: Dimension[]) => void;
 }
 
 export const RouteControls: React.FC<RouteControlsProps> = ({
@@ -54,7 +54,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   capabilities = {},
   options = { motorway: false, toll: false, low_emission_zone: false, track: false },
   onOptionsChange,
-  dimension = 'time',
+  dimensions = ['time'],
   onDimensionChange,
 }) => {
   const { t } = useTranslation();
@@ -329,23 +329,33 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
       {/* Dimension selector */}
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-2 sm:mb-3">{t('routeControls.isolines.dimension')}</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {(['time', 'distance'] as Dimension[]).map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => onDimensionChange && onDimensionChange(d)}
-              className={`flex items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 ${
-                dimension === d
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <span className="text-xs sm:text-sm font-medium">
-                {d === 'time' ? t('routeControls.isolines.time') : t('routeControls.isolines.distance')}
-              </span>
-            </button>
-          ))}
+        <div className="space-y-2">
+          {(['time', 'distance'] as Dimension[]).map((d) => {
+            const isChecked = dimensions.includes(d);
+            const isLast = dimensions.length === 1 && isChecked;
+            const label = d === 'time' ? t('routeControls.isolines.time') : t('routeControls.isolines.distance');
+            return (
+              <div key={d} className="grid grid-cols-[1fr_auto] items-center gap-3 border rounded-lg px-3 py-2 bg-white">
+                <div className="text-sm text-gray-800">{label}</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!onDimensionChange || isLast) return;
+                    if (isChecked) {
+                      onDimensionChange(dimensions.filter(x => x !== d));
+                    } else {
+                      onDimensionChange([...dimensions, d]);
+                    }
+                  }}
+                  className={`justify-self-end relative inline-flex h-6 w-11 shrink-0 flex-none items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isChecked ? 'bg-blue-600' : 'bg-gray-200'} ${isLast ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={isLast ? '' : isChecked ? 'Désactiver' : 'Activer'}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isChecked ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <span className="sr-only">{label}</span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 

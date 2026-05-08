@@ -136,7 +136,7 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
         const coords = route.geometry.coordinates || [];
         const validCoordinates = filterValidCoordinates(coords);
         if (validCoordinates.length === 0) return;
-        addRouteSourceAndLayers(map.current!, layerId, route.color, validCoordinates, isDevTransportMode(route.mode));
+        addRouteSourceAndLayers(map.current!, layerId, route.color, validCoordinates, isDevTransportMode(route.mode) || route.dimension === 'distance');
       } catch (error) {
         console.error('Error adding route layer:', error, route);
       }

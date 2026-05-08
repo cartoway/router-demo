@@ -18,7 +18,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { RouterApiService } from '../services/routerApi';
 import type { ApiRequest } from '../types/api';
-import { RoutePoint, RouteResult, CartowayResponse } from '../types/route';
+import { RoutePoint, RouteResult, CartowayResponse, Dimension } from '../types/route';
 import { ROUTE_COLORS } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 
@@ -63,7 +63,7 @@ export const useRouteCalculation = () => {
     destination: RoutePoint,
     modes: string[],
     onRequestLog?: (request: ApiRequest) => void,
-    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; dimension: 'time' | 'distance'; }>
+    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; dimensions: Dimension[]; }>
   ) => {
     if (modes.length === 0 || !routerServiceRef.current) return;
 
@@ -72,10 +72,14 @@ export const useRouteCalculation = () => {
       return;
     }
 
+    const dimensions: Dimension[] = options?.dimensions && options.dimensions.length > 0
+      ? options.dimensions
+      : ['time'];
+
     // Build a stable key to avoid duplicate (and looping) recalculations
     const optsKey =
       options
-        ? `${options.motorway ? 1 : 0}${options.toll ? 1 : 0}${options.low_emission_zone ? 1 : 0}${options.track ? 1 : 0}|${options.dimension ?? 'time'}`
+        ? `${options.motorway ? 1 : 0}${options.toll ? 1 : 0}${options.low_emission_zone ? 1 : 0}${options.track ? 1 : 0}|${[...dimensions].sort().join(',')}`
         : '0000|time';
     const modesKey = [...modes].sort().join(',');
     const key = `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}->${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}|${modesKey}|${optsKey}`;
@@ -92,65 +96,70 @@ export const useRouteCalculation = () => {
     setIsCalculating(true);
     setError(null);
 
+    // Build all (mode, dimension) combinations to calculate
+    const combinations: Array<{ mode: string; dimension: Dimension }> = dimensions.flatMap(dim =>
+      modes.map(mode => ({ mode, dimension: dim }))
+    );
+
     try {
-      // Calculate per mode to capture partial failures
+      // Calculate per (mode, dimension) to capture partial failures
       const settled = await Promise.allSettled(
-        modes.map(async (mode) => {
+        combinations.map(async ({ mode, dimension }) => {
           const res: CartowayResponse = await routerServiceRef.current!.calculateRoute(
             origin,
             destination,
-            { mode, geometry: true, dimension: options?.dimension, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track }
+            { mode, geometry: true, dimension, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track }
           );
-          return { mode, res };
+          return { mode, dimension, res };
         })
       );
 
       const nextResults: RouteResult[] = [];
-      const successes: Array<{ mode: string; res: CartowayResponse }> = [];
-      const failures: Array<{ mode: string; reason: unknown }> = [];
+      const successCount = { value: 0 };
+      const failureCount = { value: 0 };
 
       settled.forEach((r, idx) => {
+        const { mode, dimension } = combinations[idx];
         if (r.status === 'fulfilled') {
-          successes.push(r.value);
+          const { res } = r.value;
+          successCount.value++;
+          if (res.features && res.features.length > 0) {
+            const feature = res.features[0];
+            const routeResult = routerServiceRef.current!.convertToRouteResult(feature, mode);
+            nextResults.push({
+              ...routeResult,
+              dimension,
+              color: ROUTE_COLORS[mode] || '#6B7280',
+            });
+          }
         } else {
-          failures.push({ mode: modes[idx], reason: r.reason });
-        }
-      });
-
-      // Build RouteResult for successes
-      successes.forEach(({ mode, res }) => {
-        if (res.features && res.features.length > 0) {
-          const feature = res.features[0];
-          const routeResult = routerServiceRef.current!.convertToRouteResult(feature, mode);
+          failureCount.value++;
+          const message = r.reason instanceof Error ? r.reason.message : t('errors.calculationError');
           nextResults.push({
-            ...routeResult,
+            mode,
+            dimension,
+            duration: 0,
+            distance: 0,
             color: ROUTE_COLORS[mode] || '#6B7280',
+            error: true,
+            errorMessage: message,
           });
         }
       });
 
-      // Add error placeholders for failures
-      failures.forEach(({ mode, reason }) => {
-        const message = reason instanceof Error ? reason.message : t('errors.calculationError');
-        nextResults.push({
-          mode,
-          duration: 0,
-          distance: 0,
-          color: ROUTE_COLORS[mode] || '#6B7280',
-          error: true,
-          errorMessage: message,
-        });
-      });
-
-      // Merge with previous, replacing any entries for the calculated modes
+      // Merge with previous, replacing entries for the calculated (mode, dimension) pairs
+      const modeSet = new Set(modes);
+      const dimSet = new Set(dimensions);
       setRoutes(prevRoutes => {
-        const filteredRoutes = prevRoutes.filter(route => !modes.includes(route.mode));
+        const filteredRoutes = prevRoutes.filter(
+          route => !(modeSet.has(route.mode) && dimSet.has(route.dimension))
+        );
         return [...filteredRoutes, ...nextResults];
       });
 
       if (nextResults.length === 0) {
         setError(t('errors.noRoutesFound'));
-      } else if (failures.length > 0 && successes.length === 0) {
+      } else if (failureCount.value > 0 && successCount.value === 0) {
         setError(t('errors.allRoutesFailed'));
       } else {
         setError(null);

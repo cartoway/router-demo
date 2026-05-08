@@ -73,7 +73,7 @@ function App() {
   const prevDestination = useRef<RoutePoint | null>(null);
   const prevRoutes = useRef<RouteResult[]>([]);
   const prevOptions = useRef<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean } | null>(null);
-  const prevDimension = useRef<Dimension>('time');
+  const prevDimensions = useRef<Dimension[]>(['time']);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes, capabilities } = useRouteCalculation();
   const [routeOptions, setRouteOptions] = useState<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>({
@@ -82,7 +82,7 @@ function App() {
     low_emission_zone: false,
     track: false,
   });
-  const [routeDimension, setRouteDimension] = useState<Dimension>('time');
+  const [routeDimensions, setRouteDimensions] = useState<Dimension[]>(['time']);
 
   // Helper: parse coordinate string with separators ':', '_' or ','
   const parseLatLng = (value: string | null): RoutePoint | null => {
@@ -157,8 +157,9 @@ function App() {
 
     // Init dimension from URL
     const dimParam = params.get('dimension');
-    if (dimParam === 'distance') {
-      setRouteDimension('distance');
+    if (dimParam) {
+      const dims = dimParam.split(',').filter((d): d is Dimension => d === 'time' || d === 'distance');
+      if (dims.length > 0) setRouteDimensions(dims);
     }
   }, []);
 
@@ -218,18 +219,19 @@ function App() {
       params.delete('track');
     }
 
-    // Sync dimension: omit when 'time' (the default)
+    // Sync dimension: omit when ['time'] (the default)
     if (!isIsolineRoute) {
-      if (routeDimension === 'distance') {
-        params.set('dimension', 'distance');
-      } else {
+      const sortedDims = [...routeDimensions].sort();
+      if (sortedDims.length === 1 && sortedDims[0] === 'time') {
         params.delete('dimension');
+      } else {
+        params.set('dimension', sortedDims.join(','));
       }
     }
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [origin, destination, selectedModes, isDevMode, routeOptions, routeDimension]);
+  }, [origin, destination, selectedModes, isDevMode, routeOptions, routeDimensions]);
 
   // Handle API request logging
   const handleApiRequest = useCallback((request: ApiRequest) => {
@@ -263,6 +265,9 @@ function App() {
 
     return null;
   };
+
+  // Filter routes to only show active dimensions
+  const displayRoutes = routes.filter(r => routeDimensions.includes(r.dimension));
 
   // Filter API requests to only show selected modes
   const filteredApiRequests = apiRequests.filter(request => {
@@ -313,21 +318,23 @@ function App() {
             prev.toll !== curr.toll ||
           prev.low_emission_zone !== curr.low_emission_zone ||
           prev.track !== curr.track ||
-          prevDimension.current !== routeDimension
+          JSON.stringify([...prevDimensions.current].sort()) !== JSON.stringify([...routeDimensions].sort())
           );
         })();
 
         if (pointsChanged || optionsChanged) {
           // Recalculate all routes when points change
-          calculateRoutes(origin, destination, selectedModes, handleApiRequest, { ...routeOptions, dimension: routeDimension });
+          calculateRoutes(origin, destination, selectedModes, handleApiRequest, { ...routeOptions, dimensions: routeDimensions });
         } else {
           // Check if we need to calculate new modes
-          const existingModes = prevRoutes.current.map(route => route.mode);
-          const newModes = selectedModes.filter(mode => !existingModes.includes(mode));
+          const existingCombos = new Set(prevRoutes.current.map(r => `${r.mode}-${r.dimension}`));
+          const newModes = selectedModes.filter(mode =>
+            routeDimensions.some(dim => !existingCombos.has(`${mode}-${dim}`))
+          );
 
           if (newModes.length > 0) {
             // Calculate only new routes
-            calculateRoutes(origin, destination, newModes, handleApiRequest, { ...routeOptions, dimension: routeDimension });
+            calculateRoutes(origin, destination, newModes, handleApiRequest, { ...routeOptions, dimensions: routeDimensions });
           }
         }
 
@@ -341,14 +348,14 @@ function App() {
         prevOrigin.current = origin;
         prevDestination.current = destination;
         prevOptions.current = routeOptions;
-        prevDimension.current = routeDimension;
+        prevDimensions.current = routeDimensions;
       } else {
         // Clear routes if no modes are selected
         clearRoutes();
         setVisibleRoutes([]);
       }
     }
-}, [origin, destination, selectedModes, routeOptions, routeDimension, routes, calculateRoutes, clearRoutes, handleApiRequest]);
+}, [origin, destination, selectedModes, routeOptions, routeDimensions, routes, calculateRoutes, clearRoutes, handleApiRequest]);
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {
@@ -400,8 +407,8 @@ function App() {
                     capabilities={capabilities}
                     options={routeOptions}
                     onOptionsChange={setRouteOptions}
-                    dimension={routeDimension}
-                    onDimensionChange={setRouteDimension}
+                    dimensions={routeDimensions}
+                    onDimensionChange={setRouteDimensions}
                   />
                 </div>
 
@@ -412,7 +419,7 @@ function App() {
                       onPointSelect={handlePointSelect}
                       origin={origin}
                       destination={destination}
-                      routes={routes}
+                      routes={displayRoutes}
                       visibleRoutes={visibleRoutes}
                     />
                   </div>
@@ -421,7 +428,7 @@ function App() {
                 {/* Right Sidebar - Results */}
                 <div className="lg:col-span-3 space-y-6 order-3 p-4 lg:p-0">
                   <RouteResults
-                    routes={routes}
+                    routes={displayRoutes}
                     selectedModes={selectedModes}
                     isDevMode={isDevMode}
                     apiRequests={filteredApiRequests}

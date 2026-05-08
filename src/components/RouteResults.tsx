@@ -86,7 +86,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
             {filteredRoutes.map((route) => {
               return (
                 <div
-                  key={route.mode}
+                  key={`${route.mode}-${route.dimension}`}
                   className={`border-2 rounded-lg p-3 sm:p-4 transition-all duration-200 ${route.error ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'} shadow-sm`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -97,6 +97,9 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                       />
                       <span className="font-medium text-gray-900 text-sm sm:text-base">
                         {getModeLabel(route.mode, t)}
+                      </span>
+                      <span className="text-xs text-gray-500 italic">
+                        {route.dimension === 'distance' ? t('routeControls.isolines.distance') : t('routeControls.isolines.time')}
                       </span>
                     </div>
                   </div>

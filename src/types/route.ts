@@ -34,6 +34,7 @@ export interface RouteOptions {
 
 export interface RouteResult {
   mode: string;
+  dimension: Dimension;
   duration: number;
   distance: number;
   geometry?: {
