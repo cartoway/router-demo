@@ -23,7 +23,7 @@ import {
   faBolt
 } from '@fortawesome/free-solid-svg-icons';
 import { RouteResult } from '../types/route';
-import { getModeLabel } from '../config/transportModes';
+import { getModeLabel, getModeIcon } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 import { ApiRequest } from '../types/api';
 import ApiRequestsPanel from './ApiRequestsPanel';
@@ -91,16 +91,26 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div
-                        className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: route.color }}
-                      />
+                      {(() => {
+                        const icon = getModeIcon(route.mode);
+                        return icon ? (
+                          <FontAwesomeIcon icon={icon} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: route.color }} />
+                        ) : (
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: route.color }} />
+                        );
+                      })()}
                       <span className="font-medium text-gray-900 text-sm sm:text-base">
                         {getModeLabel(route.mode, t)}
                       </span>
                       <span className="text-xs text-gray-500 italic">
                         {route.dimension === 'distance' ? t('routeControls.isolines.distance') : t('routeControls.isolines.time')}
                       </span>
+                      <svg width="28" height="8" viewBox="0 0 28 8" className="flex-shrink-0">
+                        <line x1="2" y1="4" x2="26" y2="4"
+                          stroke={route.color} strokeWidth="3" strokeLinecap="round"
+                          strokeDasharray={route.dimension === 'distance' ? '4 5' : undefined}
+                        />
+                      </svg>
                     </div>
                   </div>
 
