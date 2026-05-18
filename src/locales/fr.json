@@ -55,7 +55,9 @@
   "routeResults": {
     "title": "Résultats des itinéraires",
     "fastest": "Plus rapide",
-    "shortest": "Plus court"
+    "shortest": "Plus court",
+    "totalWithParking": "Total avec stationnement",
+    "routeTime": "Trajet"
   },
   "nav": {
     "routes": "Itinéraires",

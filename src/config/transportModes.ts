@@ -192,3 +192,17 @@ export const isDevTransportMode = (modeId: string): boolean => {
   return Array.isArray(unknownModes) && unknownModes.includes(modeId);
 };
 
+// Parking time in seconds per vehicle type
+export const PARKING_TIMES: Record<string, number> = {
+  car:      7 * 60,
+  van:      7 * 60,
+  scooter:  2 * 60,
+  truck_75: 7 * 60,
+  truck_10: 7 * 60,
+  truck_12: 7 * 60,
+  truck_19: 7 * 60,
+  truck_26: 7 * 60,
+  truck_32: 7 * 60,
+  truck_44: 7 * 60,
+};
+

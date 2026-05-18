@@ -20,10 +20,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faClock,
   faLocationDot,
-  faBolt
+  faBolt,
+  faSquareParking
 } from '@fortawesome/free-solid-svg-icons';
 import { RouteResult } from '../types/route';
-import { getModeLabel, getModeIcon } from '../config/transportModes';
+import { getModeLabel, getModeIcon, PARKING_TIMES } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 import { ApiRequest } from '../types/api';
 import ApiRequestsPanel from './ApiRequestsPanel';
@@ -115,20 +116,32 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                   </div>
 
                   {!route.error ? (
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          {formatDuration(route.duration)}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          {formatDistance(route.distance)}
-                        </span>
-                      </div>
-                    </div>
+                    <>
+                      {(() => {
+                        const parkingTime = PARKING_TIMES[route.mode] ?? 0;
+                        const totalDuration = route.duration + parkingTime;
+                        return (
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                              <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-gray-700">
+                                {formatDuration(totalDuration)} {t('routeResults.routeTime')} {formatDuration(route.duration)}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                              <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-gray-700">
+                                {formatDistance(route.distance)}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                              <FontAwesomeIcon icon={faSquareParking} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                              <span>{formatDuration(parkingTime)}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
                   ) : (
                     <div className="text-xs text-gray-600">
                       {t('errors.calculationError')}

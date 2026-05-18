@@ -52,7 +52,9 @@
   "routeResults": {
     "title": "Route Results",
     "fastest": "Fastest",
-    "shortest": "Shortest"
+    "shortest": "Shortest",
+    "totalWithParking": "Total with parking",
+    "routeTime": "Route"
   },
   "nav": {
     "routes": "Routes",
