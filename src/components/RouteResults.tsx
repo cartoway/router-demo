@@ -61,16 +61,16 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
     const minutes = Math.floor((seconds % 3600) / 60);
 
     if (hours > 0) {
-      return `${hours}h ${minutes}min`;
+      return `${hours}\u00a0h\u00a0${minutes}\u00a0min`;
     }
-    return `${minutes}min`;
+    return `${minutes}\u00a0min`;
   };
 
   const formatDistance = (meters: number): string => {
     if (meters >= 1000) {
-      return `${(meters / 1000).toFixed(1)} km`;
+      return `${(meters / 1000).toFixed(1)}\u00a0km`;
     }
-    return `${Math.round(meters)} m`;
+    return `${Math.round(meters)}\u00a0m`;
   };
 
   return (
@@ -125,7 +125,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                             <div className="flex items-center space-x-1 sm:space-x-2">
                               <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
                               <span className="text-gray-700">
-                                {formatDuration(totalDuration)} {t('routeResults.routeTime')} {formatDuration(route.duration)}
+                                {formatDuration(totalDuration)}{parkingTime > 0 && <> {t('routeResults.routeTime')} {formatDuration(route.duration)}</>}
                               </span>
                             </div>
                             <div className="flex items-center space-x-1 sm:space-x-2">
@@ -134,10 +134,12 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                                 {formatDistance(route.distance)}
                               </span>
                             </div>
+                            {parkingTime > 0 && (
                             <div className="flex items-center space-x-1 sm:space-x-2">
                               <FontAwesomeIcon icon={faSquareParking} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
                               <span>{formatDuration(parkingTime)}</span>
                             </div>
+                            )}
                           </div>
                         );
                       })()}
