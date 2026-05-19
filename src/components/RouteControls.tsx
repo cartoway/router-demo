@@ -60,6 +60,7 @@ const PointInput: React.FC<PointInputProps> = ({
 }) => {
   const [query, setQuery] = useState(() => value ? fmtCoords(value) : '');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const [activeIdx, setActiveIdx] = useState(-1);
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const focusedRef = useRef(false);
@@ -69,24 +70,51 @@ const PointInput: React.FC<PointInputProps> = ({
     if (!focusedRef.current) setQuery(value ? fmtCoords(value) : '');
   }, [value]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const triggerSearch = (text: string) => {
     clearTimeout(timerRef.current);
     abortRef.current?.abort();
     setSuggestions([]);
+    setActiveIdx(-1);
     if (parseCoords(text) || text.length < 3) return;
+    console.debug('[geocode] scheduling search for:', text);
     timerRef.current = setTimeout(() => {
       const ac = new AbortController();
       abortRef.current = ac;
       geocodeSearch(text, ac.signal, { country: geocodeCountry }, onApiRequestLog)
-        .then(setSuggestions).catch(() => setSuggestions([]));
+        .then(r => { setSuggestions(r); setActiveIdx(-1); })
+        .catch(err => { if (err?.name !== 'AbortError') console.error('[geocode]', err); setSuggestions([]); });
     }, 300);
   };
 
-  const commit = (text = query) => {
-    const q = text.trim();
+  const pickSuggestion = (s: GeocodeSuggestion) => {
+    onChange({ lat: s.lat, lng: s.lng });
+    setQuery(s.label);
+    setSuggestions([]);
+    setActiveIdx(-1);
+  };
+
+  const commit = () => {
+    if (activeIdx >= 0 && suggestions[activeIdx]) {
+      pickSuggestion(suggestions[activeIdx]);
+      return;
+    }
+    const q = query.trim();
     const coords = parseCoords(q);
     if (coords) { onChange(coords); setSuggestions([]); }
     else if (!q) onChange(null);
+    else setQuery(value ? fmtCoords(value) : ''); // reset if unresolvable
+  };
+
+  const closeSuggestions = () => {
+    setTimeout(() => { setSuggestions([]); setActiveIdx(-1); }, 150);
   };
 
   return (
@@ -98,6 +126,7 @@ const PointInput: React.FC<PointInputProps> = ({
       >{leftAdornment}</span>
       <input
         type="text"
+        autoComplete="off"
         placeholder={placeholder}
         className="w-full h-9 pl-8 pr-8 border rounded text-sm bg-white"
         value={query}
@@ -109,12 +138,24 @@ const PointInput: React.FC<PointInputProps> = ({
         }}
         onFocus={() => { focusedRef.current = true; }}
         onKeyDown={e => {
-          if (e.key === 'Enter') { e.preventDefault(); commit(); }
-          if (e.key === 'Escape') { setSuggestions([]); (e.target as HTMLInputElement).blur(); }
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveIdx(i => Math.min(i + 1, suggestions.length - 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveIdx(i => Math.max(i - 1, -1));
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            commit();
+          } else if (e.key === 'Escape') {
+            setSuggestions([]);
+            setActiveIdx(-1);
+            (e.target as HTMLInputElement).blur();
+          }
         }}
         onBlur={() => {
           focusedRef.current = false;
-          setTimeout(() => setSuggestions([]), 150);
+          closeSuggestions();
           commit();
         }}
       />
@@ -126,14 +167,14 @@ const PointInput: React.FC<PointInputProps> = ({
         <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
       </button>
       {suggestions.length > 0 && (
-        <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
-          {suggestions.map(s => (
+        <div className="absolute z-50 top-full mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto" onMouseDown={e => e.preventDefault()}>
+          {suggestions.map((s, i) => (
             <button
               key={s.id}
               type="button"
-              onMouseDown={e => e.preventDefault()}
-              onClick={() => { onChange({ lat: s.lat, lng: s.lng }); setQuery(s.label); setSuggestions([]); }}
-              className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={() => pickSuggestion(s)}
+              className={`block w-full text-left px-3 py-2 text-sm ${i === activeIdx ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-100'}`}
             >
               {s.label}
             </button>
