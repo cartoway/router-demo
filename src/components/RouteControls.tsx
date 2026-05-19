@@ -30,6 +30,120 @@ import { useTranslation } from '../contexts/TranslationContext';
 import { geocodeSearch, GeocodeSuggestion } from '../services/geocoderApi';
 import type { ApiRequest } from '../types/api';
 
+// ---- Shared helpers ----
+function parseCoords(text: string): RoutePoint | null {
+  const parts = text.trim().replace(/\s+/g, '').split(/[,:_ ]/).filter(Boolean);
+  if (parts.length !== 2) return null;
+  const lat = Number(parts[0]), lng = Number(parts[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
+}
+function fmtCoords(p: RoutePoint) { return `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`; }
+
+// ---- Shared address/geocode input ----
+interface PointInputProps {
+  value: RoutePoint | null;
+  onChange: (p: RoutePoint | null) => void;
+  onRemove: () => void;
+  placeholder: string;
+  leftAdornment: React.ReactNode;
+  geocodeCountry: string;
+  onApiRequestLog?: (request: ApiRequest) => void;
+  onAdornmentMouseDown?: () => void;
+  onAdornmentMouseUp?: () => void;
+}
+
+const PointInput: React.FC<PointInputProps> = ({
+  value, onChange, onRemove, placeholder, leftAdornment, geocodeCountry, onApiRequestLog,
+  onAdornmentMouseDown, onAdornmentMouseUp,
+}) => {
+  const [query, setQuery] = useState(() => value ? fmtCoords(value) : '');
+  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const focusedRef = useRef(false);
+
+  // Sync from external value (map click, URL load) only when not editing
+  useEffect(() => {
+    if (!focusedRef.current) setQuery(value ? fmtCoords(value) : '');
+  }, [value]);
+
+  const triggerSearch = (text: string) => {
+    clearTimeout(timerRef.current);
+    abortRef.current?.abort();
+    setSuggestions([]);
+    if (parseCoords(text) || text.length < 3) return;
+    timerRef.current = setTimeout(() => {
+      const ac = new AbortController();
+      abortRef.current = ac;
+      geocodeSearch(text, ac.signal, { country: geocodeCountry }, onApiRequestLog)
+        .then(setSuggestions).catch(() => setSuggestions([]));
+    }, 300);
+  };
+
+  const commit = (text = query) => {
+    const q = text.trim();
+    const coords = parseCoords(q);
+    if (coords) { onChange(coords); setSuggestions([]); }
+    else if (!q) onChange(null);
+  };
+
+  return (
+    <div className="relative">
+      <span
+        className={`absolute left-2.5 top-1/2 -translate-y-1/2${onAdornmentMouseDown ? '' : ' pointer-events-none'}`}
+        onMouseDown={onAdornmentMouseDown}
+        onMouseUp={onAdornmentMouseUp}
+      >{leftAdornment}</span>
+      <input
+        type="text"
+        placeholder={placeholder}
+        className="w-full h-9 pl-8 pr-8 border rounded text-sm bg-white"
+        value={query}
+        onChange={e => {
+          const text = e.target.value;
+          setQuery(text);
+          if (!text) { onChange(null); setSuggestions([]); return; }
+          triggerSearch(text.trim());
+        }}
+        onFocus={() => { focusedRef.current = true; }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') { setSuggestions([]); (e.target as HTMLInputElement).blur(); }
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          setTimeout(() => setSuggestions([]), 150);
+          commit();
+        }}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+      >
+        <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+      </button>
+      {suggestions.length > 0 && (
+        <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
+          {suggestions.map(s => (
+            <button
+              key={s.id}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { onChange({ lat: s.lat, lng: s.lng }); setQuery(s.label); setSuggestions([]); }}
+              className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface RouteControlsProps {
   origin: RoutePoint | null;
   destination: RoutePoint | null;
@@ -49,134 +163,6 @@ interface RouteControlsProps {
   dimensions?: Dimension[];
   onDimensionChange?: (d: Dimension[]) => void;
 }
-
-// ---- ViaPointInput sub-component ----
-interface ViaPointInputProps {
-  index: number;
-  value: RoutePoint | null;
-  onChange: (point: RoutePoint | null) => void;
-  onRemove: () => void;
-  geocodeCountry: string;
-  onApiRequestLog?: (request: ApiRequest) => void;
-  t: (key: string) => string;
-}
-
-const ViaPointInput: React.FC<ViaPointInputProps> = ({
-  index, value, onChange, onRemove, geocodeCountry, onApiRequestLog, t
-}) => {
-  const [query, setQuery] = useState<string>('');
-  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
-  const abortRef = useRef<AbortController | null>(null);
-  const [debounced, setDebounced] = useState('');
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(query), 300);
-    return () => clearTimeout(id);
-  }, [query]);
-
-  const parseCoords = (text: string): { lat: number; lng: number } | null => {
-    const cleaned = text.trim().replace(/\s+/g, '');
-    const parts = cleaned.split(/[,:_ ]/).filter(Boolean);
-    if (parts.length !== 2) return null;
-    const lat = Number(parts[0]);
-    const lng = Number(parts[1]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-    return { lat, lng };
-  };
-
-  useEffect(() => {
-    const q = debounced.trim();
-    if (parseCoords(q)) { setSuggestions([]); return; }
-    if (abortRef.current) abortRef.current.abort();
-    if (q.length < 3) { setSuggestions([]); return; }
-    const ac = new AbortController();
-    abortRef.current = ac;
-    geocodeSearch(q, ac.signal, { country: geocodeCountry }, onApiRequestLog)
-      .then(setSuggestions)
-      .catch(() => setSuggestions([]));
-    return () => ac.abort();
-  }, [debounced, geocodeCountry, onApiRequestLog]);
-
-  useEffect(() => {
-    if (value) {
-      setQuery(`${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`);
-    } else {
-      setQuery('');
-    }
-  }, [value]);
-
-  const pick = (s: GeocodeSuggestion) => {
-    onChange({ lat: s.lat, lng: s.lng });
-    setQuery(s.label);
-    setSuggestions([]);
-  };
-  const tryApplyCoords = () => {
-    const coords = parseCoords(query);
-    if (coords) { onChange(coords); setSuggestions([]); }
-  };
-
-  return (
-    <div className="bg-gray-50 rounded-lg">
-      <div className="relative">
-        <div className="relative flex-1">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 cursor-grab active:cursor-grabbing">
-            <FontAwesomeIcon icon={faGripLines} className="h-3 w-3 text-orange-400" />
-          </span>
-          <input
-            type="text"
-            placeholder={`${t('routeControls.waypoint.addressPlaceholder')} ${index + 1}`}
-            className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm"
-            value={query}
-            onChange={e => { setQuery(e.target.value); if (!e.target.value) onChange(null); }}
-            onFocus={e => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyCoords(); } }}
-            onBlur={() => { if (query !== (value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : '')) tryApplyCoords(); }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (value) {
-                onChange(null);
-                setQuery('');
-                setSuggestions([]);
-              } else {
-                onRemove();
-              }
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-red-600 hover:bg-red-50"
-            title={t('routeControls.waypoint.removeTooltip')}
-          >
-            <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-          </button>
-        </div>
-        {suggestions.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
-            {parseCoords(query) && (
-              <button
-                type="button"
-                onClick={tryApplyCoords}
-                className="block w-full text-left px-3 py-2 bg-blue-50 hover:bg-blue-100 text-sm"
-              >
-                {`Utiliser ces coordonnées: ${query}`}
-              </button>
-            )}
-            {suggestions.map(s => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => pick(s)}
-                className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 export const RouteControls: React.FC<RouteControlsProps> = ({
   origin,
@@ -202,115 +188,8 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   const [optionsOpen, setOptionsOpen] = useState<boolean>(false);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const dragFromIdxRef = useRef<number>(-1);
-
-  const formatCoordinates = (point: RoutePoint) => {
-    return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
-  };
-
-  // Address inputs & suggestions
-  const [originQuery, setOriginQuery] = useState<string>('');
-  const [destQuery, setDestQuery] = useState<string>('');
-  const [originSuggestions, setOriginSuggestions] = useState<GeocodeSuggestion[]>([]);
-  const [destSuggestions, setDestSuggestions] = useState<GeocodeSuggestion[]>([]);
-  const originAbortRef = useRef<AbortController | null>(null);
-  const destAbortRef = useRef<AbortController | null>(null);
-
-  // Geocoding country selection (default FR)
+  const dragAllowedRef = useRef(false);
   const [geocodeCountry, setGeocodeCountry] = useState<string>('fr');
-
-  // Parse coordinates from free text: supports "lat,lng" "lat:lng" "lat lng" "lat_lng"
-  const parseCoords = (text: string): { lat: number; lng: number } | null => {
-    const cleaned = text.trim().replace(/\s+/g, '');
-    const parts = cleaned.split(/[,:_ ]/).filter(Boolean);
-    if (parts.length !== 2) return null;
-    const lat = Number(parts[0]);
-    const lng = Number(parts[1]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-    return { lat, lng };
-  };
-
-  // Debounce helper
-  const useDebounced = (value: string, delay = 300) => {
-    const [debounced, setDebounced] = useState(value);
-    useEffect(() => {
-      const id = setTimeout(() => setDebounced(value), delay);
-      return () => clearTimeout(id);
-    }, [value, delay]);
-    return debounced;
-  };
-  const originDebounced = useDebounced(originQuery);
-  const destDebounced = useDebounced(destQuery);
-
-  // Search origin suggestions
-  useEffect(() => {
-    const q = originDebounced.trim();
-    if (parseCoords(q)) { setOriginSuggestions([]); return; }
-    if (originAbortRef.current) originAbortRef.current.abort();
-    if (q.length < 3) { setOriginSuggestions([]); return; }
-    const ac = new AbortController();
-    originAbortRef.current = ac;
-    geocodeSearch(q, ac.signal, { country: geocodeCountry }, onApiRequestLog).then(setOriginSuggestions).catch(() => setOriginSuggestions([]));
-    return () => ac.abort();
-  }, [originDebounced, geocodeCountry, onApiRequestLog]);
-
-  // Search destination suggestions
-  useEffect(() => {
-    const q = destDebounced.trim();
-    if (parseCoords(q)) { setDestSuggestions([]); return; }
-    if (destAbortRef.current) destAbortRef.current.abort();
-    if (q.length < 3) { setDestSuggestions([]); return; }
-    const ac = new AbortController();
-    destAbortRef.current = ac;
-    geocodeSearch(q, ac.signal, { country: geocodeCountry }, onApiRequestLog).then(setDestSuggestions).catch(() => setDestSuggestions([]));
-    return () => ac.abort();
-  }, [destDebounced, geocodeCountry, onApiRequestLog]);
-
-  const pickOrigin = (s: GeocodeSuggestion) => {
-    onPointSelect({ lat: s.lat, lng: s.lng }, 'origin');
-    setOriginQuery(s.label);
-    setOriginSuggestions([]);
-  };
-  const pickDestination = (s: GeocodeSuggestion) => {
-    onPointSelect({ lat: s.lat, lng: s.lng }, 'destination');
-    setDestQuery(s.label);
-    setDestSuggestions([]);
-  };
-
-  const tryApplyOriginCoords = () => {
-    const coords = parseCoords(originQuery);
-    if (coords) {
-      onPointSelect(coords, 'origin');
-      setOriginSuggestions([]);
-      return true;
-    }
-    return false;
-  };
-  const tryApplyDestCoords = () => {
-    const coords = parseCoords(destQuery);
-    if (coords) {
-      onPointSelect(coords, 'destination');
-      setDestSuggestions([]);
-      return true;
-    }
-    return false;
-  };
-
-  // Sync input with coordinates when set externally (e.g., map click) and field empty
-  useEffect(() => {
-    if (origin) {
-      setOriginQuery(formatCoordinates(origin));
-    } else {
-      setOriginQuery('');
-    }
-  }, [origin]);
-  useEffect(() => {
-    if (destination) {
-      setDestQuery(formatCoordinates(destination));
-    } else {
-      setDestQuery('');
-    }
-  }, [destination]);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-3 sm:space-y-3">
@@ -333,64 +212,26 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
           </select>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:gap-3">
-          <div className="bg-gray-50 rounded-lg">
-            {/* Address input - origin */}
-            <div className="relative">
-                <div className="relative flex-1">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white"></span>
-                <input
-                  type="text"
-                  placeholder={t('routeControls.origin.addressPlaceholder')}
-                  className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm"
-                  value={originQuery}
-                  onChange={e => { setOriginQuery(e.target.value); if (!e.target.value) onPointSelect(null, 'origin'); }}
-                  onFocus={e => e.target.select()}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyOriginCoords(); } }}
-                  onBlur={() => { if (originQuery !== (origin ? formatCoordinates(origin) : '')) tryApplyOriginCoords(); }}
-                />
-                  <button
-                    type="button"
-                    onClick={() => onPointSelect(null, 'origin')}
-                    disabled={!origin}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${origin ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
-                    title={t('routeControls.origin.removeTooltip')}
-                  >
-                    <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                  </button>
-                </div>
-              {originSuggestions.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
-                  {parseCoords(originQuery) && (
-                    <button
-                      type="button"
-                      onClick={tryApplyOriginCoords}
-                      className="block w-full text-left px-3 py-2 bg-blue-50 hover:bg-blue-100 text-sm"
-                    >
-                      {`Utiliser ces coordonnées: ${originQuery}`}
-                    </button>
-                  )}
-                  {originSuggestions.map(s => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => pickOrigin(s)}
-                      className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {/* Saisie via adresse ou coordonnées dans le champ ci-dessus */}
-          </div>
+          {/* Origin */}
+          <PointInput
+            value={origin}
+            onChange={p => onPointSelect(p, 'origin')}
+            onRemove={() => onPointSelect(null, 'origin')}
+            placeholder={t('routeControls.origin.addressPlaceholder')}
+            leftAdornment={<span className="w-3 h-3 bg-green-500 rounded-full border-2 border-white inline-block" />}
+            geocodeCountry={geocodeCountry}
+            onApiRequestLog={onApiRequestLog}
+          />
 
           {/* Viapoints */}
           {viapoints.map((via, idx) => (
             <div
               key={idx}
               draggable
-              onDragStart={() => { dragFromIdxRef.current = idx; }}
+              onDragStart={e => {
+                if (!dragAllowedRef.current) { e.preventDefault(); return; }
+                dragFromIdxRef.current = idx;
+              }}
               onDragOver={e => { e.preventDefault(); setDragOverIdx(idx); }}
               onDragLeave={() => setDragOverIdx(null)}
               onDrop={() => {
@@ -400,17 +241,23 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
                 setDragOverIdx(null);
                 dragFromIdxRef.current = -1;
               }}
-              onDragEnd={() => { setDragOverIdx(null); dragFromIdxRef.current = -1; }}
+              onDragEnd={() => { setDragOverIdx(null); dragFromIdxRef.current = -1; dragAllowedRef.current = false; }}
               className={`border-t-2 transition-colors ${dragOverIdx === idx ? 'border-blue-400' : 'border-transparent'}`}
             >
-              <ViaPointInput
-                index={idx}
+              <PointInput
                 value={via}
-                onChange={(point) => onViapointChange(idx, point)}
-                onRemove={() => onViapointRemove(idx)}
+                onChange={p => onViapointChange(idx, p)}
+                onRemove={() => via ? onViapointChange(idx, null) : onViapointRemove(idx)}
+                placeholder={`${t('routeControls.waypoint.addressPlaceholder')} ${idx + 1}`}
+                leftAdornment={
+                  <span className="flex items-center justify-center w-4 h-4 cursor-grab active:cursor-grabbing">
+                    <FontAwesomeIcon icon={faGripLines} className="h-3 w-3 text-orange-400" />
+                  </span>
+                }
+                onAdornmentMouseDown={() => { dragAllowedRef.current = true; }}
+                onAdornmentMouseUp={() => { dragAllowedRef.current = false; }}
                 geocodeCountry={geocodeCountry}
                 onApiRequestLog={onApiRequestLog}
-                t={t}
               />
             </div>
           ))}
@@ -425,57 +272,16 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
             <span>{t('routeControls.waypoint.addButton')}</span>
           </button>
 
-          <div className="bg-gray-50 rounded-lg">
-            {/* Address input - destination */}
-            <div className="mb-2 relative">
-                <div className="relative flex-1">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white"></span>
-                <input
-                  type="text"
-                  placeholder={t('routeControls.destination.addressPlaceholder')}
-                  className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm"
-                  value={destQuery}
-                  onChange={e => { setDestQuery(e.target.value); if (!e.target.value) onPointSelect(null, 'destination'); }}
-                  onFocus={e => e.target.select()}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyDestCoords(); } }}
-                  onBlur={() => { if (destQuery !== (destination ? formatCoordinates(destination) : '')) tryApplyDestCoords(); }}
-                />
-                  <button
-                    type="button"
-                    onClick={() => onPointSelect(null, 'destination')}
-                    disabled={!destination}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${destination ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
-                    title={t('routeControls.destination.removeTooltip')}
-                  >
-                    <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-                  </button>
-                </div>
-              {destSuggestions.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
-                  {parseCoords(destQuery) && (
-                    <button
-                      type="button"
-                      onClick={tryApplyDestCoords}
-                      className="block w-full text-left px-3 py-2 bg-blue-50 hover:bg-blue-100 text-sm"
-                    >
-                      {`Utiliser ces coordonnées: ${destQuery}`}
-                    </button>
-                  )}
-                  {destSuggestions.map(s => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => pickDestination(s)}
-                      className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {/* Saisie via adresse ou coordonnées dans le champ ci-dessus */}
-          </div>
+          {/* Destination */}
+          <PointInput
+            value={destination}
+            onChange={p => onPointSelect(p, 'destination')}
+            onRemove={() => onPointSelect(null, 'destination')}
+            placeholder={t('routeControls.destination.addressPlaceholder')}
+            leftAdornment={<span className="w-3 h-3 bg-red-500 rounded-full border-2 border-white inline-block" />}
+            geocodeCountry={geocodeCountry}
+            onApiRequestLog={onApiRequestLog}
+          />
         </div>
       </div>
 
