@@ -405,6 +405,16 @@ function App() {
     setViapoints(prev => prev.length <= 1 ? [null] : prev.filter((_, i) => i !== index));
   }, []);
 
+  const handleViapointReorder = useCallback((fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    setViapoints(prev => {
+      const next = [...prev];
+      const [item] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, item);
+      return next;
+    });
+  }, []);
+
   // Called from map when user drags on a route line — inserts a positioned waypoint
   const handleViapointInsert = useCallback((insertIdx: number, point: RoutePoint) => {
     setViapoints(prev => {
@@ -445,6 +455,7 @@ function App() {
                     onViapointChange={handleViapointChange}
                     onViapointAdd={handleViapointAdd}
                     onViapointRemove={handleViapointRemove}
+                    onViapointReorder={handleViapointReorder}
                     selectedModes={selectedModes}
                     onModeToggle={handleModeToggle}
                     onPointSelect={handlePointSelect}

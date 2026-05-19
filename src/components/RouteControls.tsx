@@ -37,6 +37,7 @@ interface RouteControlsProps {
   onViapointChange: (index: number, point: RoutePoint | null) => void;
   onViapointAdd: () => void;
   onViapointRemove: (index: number) => void;
+  onViapointReorder?: (from: number, to: number) => void;
   selectedModes: string[];
   onModeToggle: (mode: string) => void;
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
@@ -119,7 +120,7 @@ const ViaPointInput: React.FC<ViaPointInputProps> = ({
     <div className="bg-gray-50 rounded-lg">
       <div className="relative">
         <div className="relative flex-1">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4">
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 cursor-grab active:cursor-grabbing">
             <FontAwesomeIcon icon={faGripLines} className="h-3 w-3 text-orange-400" />
           </span>
           {value ? (
@@ -188,6 +189,7 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   onViapointChange,
   onViapointAdd,
   onViapointRemove,
+  onViapointReorder,
   selectedModes,
   onModeToggle,
   onPointSelect,
@@ -202,6 +204,8 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
   const { t } = useTranslation();
 
   const [optionsOpen, setOptionsOpen] = useState<boolean>(false);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const dragFromIdxRef = useRef<number>(-1);
 
   const formatCoordinates = (point: RoutePoint) => {
     return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
@@ -391,16 +395,32 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
 
           {/* Viapoints */}
           {viapoints.map((via, idx) => (
-            <ViaPointInput
+            <div
               key={idx}
-              index={idx}
-              value={via}
-              onChange={(point) => onViapointChange(idx, point)}
-              onRemove={() => onViapointRemove(idx)}
-              geocodeCountry={geocodeCountry}
-              onApiRequestLog={onApiRequestLog}
-              t={t}
-            />
+              draggable
+              onDragStart={() => { dragFromIdxRef.current = idx; }}
+              onDragOver={e => { e.preventDefault(); setDragOverIdx(idx); }}
+              onDragLeave={() => setDragOverIdx(null)}
+              onDrop={() => {
+                if (dragFromIdxRef.current >= 0 && dragFromIdxRef.current !== idx) {
+                  onViapointReorder?.(dragFromIdxRef.current, idx);
+                }
+                setDragOverIdx(null);
+                dragFromIdxRef.current = -1;
+              }}
+              onDragEnd={() => { setDragOverIdx(null); dragFromIdxRef.current = -1; }}
+              className={`border-t-2 transition-colors ${dragOverIdx === idx ? 'border-blue-400' : 'border-transparent'}`}
+            >
+              <ViaPointInput
+                index={idx}
+                value={via}
+                onChange={(point) => onViapointChange(idx, point)}
+                onRemove={() => onViapointRemove(idx)}
+                geocodeCountry={geocodeCountry}
+                onApiRequestLog={onApiRequestLog}
+                t={t}
+              />
+            </div>
           ))}
 
           {/* Add viapoint button */}
