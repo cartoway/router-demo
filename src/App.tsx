@@ -125,6 +125,12 @@ function App() {
     if (originParam) setOrigin(originParam);
     if (destinationParam) setDestination(destinationParam);
 
+    const viaParams = params.getAll('via');
+    if (viaParams.length > 0) {
+      const parsed = viaParams.map(v => parseLatLng(v)).filter((v): v is RoutePoint => v !== null);
+      if (parsed.length > 0) setViapoints(parsed);
+    }
+
     if (modesParam) {
       const normalized = modesParam
         .replace(/%2C/ig, ',')
@@ -182,6 +188,11 @@ function App() {
       params.delete('dst');
     }
 
+    params.delete('via');
+    viapoints
+      .filter((v): v is RoutePoint => v !== null)
+      .forEach(v => params.append('via', `${v.lat.toFixed(6)},${v.lng.toFixed(6)}`));
+
     if (isIsolineRoute) {
       // On the isolines page, strip router 'modes' param to avoid interference
       params.delete('modes');
@@ -233,7 +244,7 @@ function App() {
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [origin, destination, selectedModes, isDevMode, routeOptions, routeDimensions]);
+  }, [origin, destination, viapoints, selectedModes, isDevMode, routeOptions, routeDimensions]);
 
   // Handle API request logging
   const handleApiRequest = useCallback((request: ApiRequest) => {
