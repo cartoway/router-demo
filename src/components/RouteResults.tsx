@@ -85,6 +85,9 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
 
           <div className="space-y-2 sm:space-y-3">
             {filteredRoutes.map((route) => {
+              const parkingTime = PARKING_TIMES[route.mode] ?? 0;
+              const totalDuration = route.duration + parkingTime;
+              const icon = getModeIcon(route.mode);
               return (
                 <div
                   key={`${route.mode}-${route.dimension}`}
@@ -92,14 +95,11 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                      {(() => {
-                        const icon = getModeIcon(route.mode);
-                        return icon ? (
-                          <FontAwesomeIcon icon={icon} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: route.color }} />
-                        ) : (
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: route.color }} />
-                        );
-                      })()}
+                      {icon ? (
+                        <FontAwesomeIcon icon={icon} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: route.color }} />
+                      ) : (
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: route.color }} />
+                      )}
                       <span className="font-medium text-gray-900 text-sm sm:text-base">
                         {getModeLabel(route.mode, t)}
                       </span>
@@ -116,34 +116,26 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                   </div>
 
                   {!route.error ? (
-                    <>
-                      {(() => {
-                        const parkingTime = PARKING_TIMES[route.mode] ?? 0;
-                        const totalDuration = route.duration + parkingTime;
-                        return (
-                          <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                            <div className="flex items-center space-x-1 sm:space-x-2">
-                              <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-gray-700">
-                                {formatDuration(totalDuration)}{parkingTime > 0 && <> {t('routeResults.routeTime')} {formatDuration(route.duration)}</>}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-1 sm:space-x-2">
-                              <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-gray-700">
-                                {formatDistance(route.distance)}
-                              </span>
-                            </div>
-                            {parkingTime > 0 && (
-                            <div className="flex items-center space-x-1 sm:space-x-2">
-                              <FontAwesomeIcon icon={faSquareParking} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                              <span>{formatDuration(parkingTime)}</span>
-                            </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <FontAwesomeIcon icon={faClock} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-700">
+                          {formatDuration(totalDuration)}{parkingTime > 0 && <> {t('routeResults.routeTime')} {formatDuration(route.duration)}</>}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-700">
+                          {formatDistance(route.distance)}
+                        </span>
+                      </div>
+                      {parkingTime > 0 && (
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <FontAwesomeIcon icon={faSquareParking} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                          <span>{formatDuration(parkingTime)}</span>
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="text-xs text-gray-600">
                       {t('errors.calculationError')}
@@ -151,7 +143,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                   )}
 
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {!route.error && validRoutes.length > 0 && route.duration === Math.min(...validRoutes.map(r => r.duration)) && (
+                    {!route.error && validRoutes.length > 0 && totalDuration === Math.min(...validRoutes.map(r => r.duration + (PARKING_TIMES[r.mode] ?? 0))) && (
                       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         {t('routeResults.fastest')}
                       </div>
