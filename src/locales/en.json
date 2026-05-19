@@ -34,6 +34,11 @@
       "title": "Transport modes",
       "selectMode": "Select a transport mode to calculate the route"
     },
+    "waypoint": {
+      "addButton": "Add waypoint",
+      "removeTooltip": "Remove waypoint",
+      "addressPlaceholder": "Waypoint address"
+    },
     "isolines": {
       "title": "Isolines",
       "dimension": "Dimension",
@@ -70,6 +75,7 @@
     "legend": {
       "title": "Legend",
       "origin": "Origin",
+      "waypoint": "Waypoint",
       "destination": "Destination"
     },
     "overlays": {

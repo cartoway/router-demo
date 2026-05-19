@@ -133,8 +133,12 @@ export class RouterApiService {
     options: RouteOptions
   ): Promise<CartowayResponse> {
 
-    // Format coordinates as: lat1,lng1,lat2,lng2
-    const locs = `${origin.lat},${origin.lng},${destination.lat},${destination.lng}`;
+    // Format coordinates as: lat1,lng1,[via...],lat2,lng2
+    const viaParts = (options.viapoints ?? [])
+      .map(v => `${v.lat},${v.lng}`).join(',');
+    const locs = viaParts
+      ? `${origin.lat},${origin.lng},${viaParts},${destination.lat},${destination.lng}`
+      : `${origin.lat},${origin.lng},${destination.lat},${destination.lng}`;
 
     const params = new URLSearchParams({
       api_key: this.apiKey,

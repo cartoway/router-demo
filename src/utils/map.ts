@@ -41,10 +41,16 @@ export function cleanupRouteLayers(map: maplibregl.Map): void {
   try {
     const style = map.getStyle();
     if (!style || !style.layers) return;
+    // First pass: remove all route layers (including outline/hit sub-layers)
     style.layers.forEach((layer) => {
       if (!layer.id.startsWith('route-')) return;
       if (map.getLayer(layer.id)) map.removeLayer(layer.id);
-      if (map.getSource(layer.id)) map.removeSource(layer.id);
+    });
+    // Second pass: remove sources (now safe, no layers reference them)
+    style.layers.forEach((layer) => {
+      if (!layer.id.startsWith('route-')) return;
+      const isSubLayer = layer.id.endsWith('-outline') || layer.id.endsWith('-hit');
+      if (!isSubLayer && map.getSource(layer.id)) map.removeSource(layer.id);
     });
   } catch {}
 }

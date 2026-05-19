@@ -20,7 +20,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faLocationDot,
   faXmark,
-  faChevronDown
+  faChevronDown,
+  faPlus,
+  faGripLines
 } from '@fortawesome/free-solid-svg-icons';
 import { RoutePoint, Dimension } from '../types/route';
 import { ENABLED_TRANSPORT_MODES, getModeLabel } from '../config/transportModes';
@@ -31,6 +33,10 @@ import type { ApiRequest } from '../types/api';
 interface RouteControlsProps {
   origin: RoutePoint | null;
   destination: RoutePoint | null;
+  viapoints: (RoutePoint | null)[];
+  onViapointChange: (index: number, point: RoutePoint | null) => void;
+  onViapointAdd: () => void;
+  onViapointRemove: (index: number) => void;
   selectedModes: string[];
   onModeToggle: (mode: string) => void;
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
@@ -43,9 +49,145 @@ interface RouteControlsProps {
   onDimensionChange?: (d: Dimension[]) => void;
 }
 
+// ---- ViaPointInput sub-component ----
+interface ViaPointInputProps {
+  index: number;
+  value: RoutePoint | null;
+  onChange: (point: RoutePoint | null) => void;
+  onRemove: () => void;
+  geocodeCountry: string;
+  onApiRequestLog?: (request: ApiRequest) => void;
+  t: (key: string) => string;
+}
+
+const ViaPointInput: React.FC<ViaPointInputProps> = ({
+  index, value, onChange, onRemove, geocodeCountry, onApiRequestLog, t
+}) => {
+  const [query, setQuery] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const [debounced, setDebounced] = useState('');
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(query), 300);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  const parseCoords = (text: string): { lat: number; lng: number } | null => {
+    const cleaned = text.trim().replace(/\s+/g, '');
+    const parts = cleaned.split(/[,:_ ]/).filter(Boolean);
+    if (parts.length !== 2) return null;
+    const lat = Number(parts[0]);
+    const lng = Number(parts[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    return { lat, lng };
+  };
+
+  useEffect(() => {
+    const q = debounced.trim();
+    if (parseCoords(q)) { setSuggestions([]); return; }
+    if (abortRef.current) abortRef.current.abort();
+    if (q.length < 3) { setSuggestions([]); return; }
+    const ac = new AbortController();
+    abortRef.current = ac;
+    geocodeSearch(q, ac.signal, { country: geocodeCountry }, onApiRequestLog)
+      .then(setSuggestions)
+      .catch(() => setSuggestions([]));
+    return () => ac.abort();
+  }, [debounced, geocodeCountry, onApiRequestLog]);
+
+  useEffect(() => {
+    if (value) {
+      setQuery(`${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`);
+    } else {
+      setQuery('');
+    }
+  }, [value]);
+
+  const pick = (s: GeocodeSuggestion) => {
+    onChange({ lat: s.lat, lng: s.lng });
+    setQuery(s.label);
+    setSuggestions([]);
+  };
+  const tryApplyCoords = () => {
+    const coords = parseCoords(query);
+    if (coords) { onChange(coords); setSuggestions([]); }
+  };
+
+  return (
+    <div className="bg-gray-50 rounded-lg">
+      <div className="relative">
+        <div className="relative flex-1">
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4">
+            <FontAwesomeIcon icon={faGripLines} className="h-3 w-3 text-orange-400" />
+          </span>
+          {value ? (
+            <div className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm text-gray-700 bg-white select-none flex items-center overflow-hidden truncate">
+              {`${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`}
+            </div>
+          ) : (
+            <input
+              type="text"
+              placeholder={`${t('routeControls.waypoint.addressPlaceholder')} ${index + 1}`}
+              className="w-full h-9 px-3 pr-10 pl-8 border rounded text-sm overflow-hidden truncate"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); tryApplyCoords(); } }}
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (value) {
+                onChange(null);
+                setQuery('');
+                setSuggestions([]);
+              } else {
+                onRemove();
+              }
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-red-600 hover:bg-red-50"
+            title={t('routeControls.waypoint.removeTooltip')}
+          >
+            <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+          </button>
+        </div>
+        {!value && suggestions.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
+            {parseCoords(query) && (
+              <button
+                type="button"
+                onClick={tryApplyCoords}
+                className="block w-full text-left px-3 py-2 bg-blue-50 hover:bg-blue-100 text-sm"
+              >
+                {`Utiliser ces coordonnées: ${query}`}
+              </button>
+            )}
+            {suggestions.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => pick(s)}
+                className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const RouteControls: React.FC<RouteControlsProps> = ({
   origin,
   destination,
+  viapoints,
+  onViapointChange,
+  onViapointAdd,
+  onViapointRemove,
   selectedModes,
   onModeToggle,
   onPointSelect,
@@ -246,6 +388,30 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
             </div>
             {/* Saisie via adresse ou coordonnées dans le champ ci-dessus */}
           </div>
+
+          {/* Viapoints */}
+          {viapoints.map((via, idx) => (
+            <ViaPointInput
+              key={idx}
+              index={idx}
+              value={via}
+              onChange={(point) => onViapointChange(idx, point)}
+              onRemove={() => onViapointRemove(idx)}
+              geocodeCountry={geocodeCountry}
+              onApiRequestLog={onApiRequestLog}
+              t={t}
+            />
+          ))}
+
+          {/* Add viapoint button */}
+          <button
+            type="button"
+            onClick={onViapointAdd}
+            className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-800 px-1 py-1"
+          >
+            <FontAwesomeIcon icon={faPlus} className="h-3 w-3" />
+            <span>{t('routeControls.waypoint.addButton')}</span>
+          </button>
 
           <div className="bg-gray-50 rounded-lg">
             {/* Address input - destination */}

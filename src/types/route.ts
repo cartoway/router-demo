@@ -30,6 +30,7 @@ export interface RouteOptions {
   toll?: boolean;
   low_emission_zone?: boolean;
   track?: boolean;
+  viapoints?: RoutePoint[];
 }
 
 export interface RouteResult {

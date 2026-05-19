@@ -34,6 +34,7 @@ function App() {
   const { t } = useTranslation();
   const [origin, setOrigin] = useState<RoutePoint | null>(null);
   const [destination, setDestination] = useState<RoutePoint | null>(null);
+  const [viapoints, setViapoints] = useState<(RoutePoint | null)[]>([null]);
 
   const initialSelectedModesFromUrl: string[] | null = (() => {
     try {
@@ -74,6 +75,7 @@ function App() {
   const prevRoutes = useRef<RouteResult[]>([]);
   const prevOptions = useRef<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean } | null>(null);
   const prevDimensions = useRef<Dimension[]>(['time']);
+  const prevViapoints = useRef<RoutePoint[]>([]);
 
   const { routes, isCalculating, error, calculateRoutes, clearRoutes, capabilities } = useRouteCalculation();
   const [routeOptions, setRouteOptions] = useState<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>({
@@ -300,6 +302,7 @@ function App() {
   // Auto-calculate routes when both points are set and modes are selected
   useEffect(() => {
     if (origin && destination) {
+      const effectiveViapoints = viapoints.filter((v): v is RoutePoint => v !== null);
       if (selectedModes.length > 0) {
         // Check if points have changed
         const pointsChanged =
@@ -322,9 +325,12 @@ function App() {
           );
         })();
 
-        if (pointsChanged || optionsChanged) {
+        const viapointsChanged =
+          JSON.stringify(effectiveViapoints) !== JSON.stringify(prevViapoints.current);
+
+        if (pointsChanged || optionsChanged || viapointsChanged) {
           // Recalculate all routes when points change
-          calculateRoutes(origin, destination, selectedModes, handleApiRequest, { ...routeOptions, dimensions: routeDimensions });
+          calculateRoutes(origin, destination, selectedModes, handleApiRequest, { ...routeOptions, dimensions: routeDimensions, viapoints: effectiveViapoints });
         } else {
           // Check if we need to calculate new modes
           const existingCombos = new Set(prevRoutes.current.map(r => `${r.mode}-${r.dimension}`));
@@ -334,7 +340,7 @@ function App() {
 
           if (newModes.length > 0) {
             // Calculate only new routes
-            calculateRoutes(origin, destination, newModes, handleApiRequest, { ...routeOptions, dimensions: routeDimensions });
+            calculateRoutes(origin, destination, newModes, handleApiRequest, { ...routeOptions, dimensions: routeDimensions, viapoints: effectiveViapoints });
           }
         }
 
@@ -349,13 +355,14 @@ function App() {
         prevDestination.current = destination;
         prevOptions.current = routeOptions;
         prevDimensions.current = routeDimensions;
+        prevViapoints.current = effectiveViapoints;
       } else {
         // Clear routes if no modes are selected
         clearRoutes();
         setVisibleRoutes([]);
       }
     }
-}, [origin, destination, selectedModes, routeOptions, routeDimensions, routes, calculateRoutes, clearRoutes, handleApiRequest]);
+}, [origin, destination, viapoints, selectedModes, routeOptions, routeDimensions, routes, calculateRoutes, clearRoutes, handleApiRequest]);
 
   const handlePointSelect = (point: RoutePoint | null, type: 'origin' | 'destination') => {
     if (type === 'origin') {
@@ -374,6 +381,30 @@ function App() {
       }
     }
   };
+
+  const handleViapointChange = useCallback((index: number, point: RoutePoint | null) => {
+    setViapoints(prev => prev.map((v, i) => i === index ? point : v));
+  }, []);
+
+  const handleViapointAdd = useCallback(() => {
+    setViapoints(prev => [...prev, null]);
+  }, []);
+
+  const handleViapointRemove = useCallback((index: number) => {
+    setViapoints(prev => prev.length <= 1 ? [null] : prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Called from map when user drags on a route line — inserts a positioned waypoint
+  const handleViapointInsert = useCallback((insertIdx: number, point: RoutePoint) => {
+    setViapoints(prev => {
+      const defined = prev.filter((v): v is RoutePoint => v !== null);
+      // Clamp insert index
+      const idx = Math.max(0, Math.min(insertIdx, defined.length));
+      const next = [...defined];
+      next.splice(idx, 0, point);
+      return next;
+    });
+  }, []);
 
   const handleModeToggle = (mode: string) => {
     setSelectedModes(prev =>
@@ -399,6 +430,10 @@ function App() {
                   <RouteControls
                     origin={origin}
                     destination={destination}
+                    viapoints={viapoints}
+                    onViapointChange={handleViapointChange}
+                    onViapointAdd={handleViapointAdd}
+                    onViapointRemove={handleViapointRemove}
                     selectedModes={selectedModes}
                     onModeToggle={handleModeToggle}
                     onPointSelect={handlePointSelect}
@@ -419,6 +454,10 @@ function App() {
                       onPointSelect={handlePointSelect}
                       origin={origin}
                       destination={destination}
+                      viapoints={viapoints}
+                      onViapointAdd={handleViapointInsert}
+                      onViapointChange={handleViapointChange}
+                      onViapointRemove={handleViapointRemove}
                       routes={displayRoutes}
                       visibleRoutes={visibleRoutes}
                     />

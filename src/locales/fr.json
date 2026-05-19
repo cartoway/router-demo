@@ -37,6 +37,11 @@
       "title": "Modes de transport",
       "selectMode": "Sélectionnez un mode de transport pour calculer l'itinéraire"
     },
+    "waypoint": {
+      "addButton": "Ajouter une étape",
+      "removeTooltip": "Supprimer l'étape",
+      "addressPlaceholder": "Adresse de l'étape"
+    },
     "isolines": {
       "title": "Isolignes",
       "dimension": "Dimension",
@@ -73,6 +78,7 @@
     "legend": {
       "title": "Légende",
       "origin": "Origine",
+      "waypoint": "Étape",
       "destination": "Destination"
     },
     "overlays": {

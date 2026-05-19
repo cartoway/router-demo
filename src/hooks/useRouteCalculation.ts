@@ -63,7 +63,7 @@ export const useRouteCalculation = () => {
     destination: RoutePoint,
     modes: string[],
     onRequestLog?: (request: ApiRequest) => void,
-    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; dimensions: Dimension[]; }>
+    options?: Partial<{ motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean; dimensions: Dimension[]; viapoints: RoutePoint[]; }>
   ) => {
     if (modes.length === 0 || !routerServiceRef.current) return;
 
@@ -82,7 +82,9 @@ export const useRouteCalculation = () => {
         ? `${options.motorway ? 1 : 0}${options.toll ? 1 : 0}${options.low_emission_zone ? 1 : 0}${options.track ? 1 : 0}|${[...dimensions].sort().join(',')}`
         : '0000|time';
     const modesKey = [...modes].sort().join(',');
-    const key = `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}->${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}|${modesKey}|${optsKey}`;
+    const viasKey = (options?.viapoints ?? [])
+      .map(v => `${v.lat.toFixed(6)},${v.lng.toFixed(6)}`).join('|');
+    const key = `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}->${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}|${modesKey}|${optsKey}|via:${viasKey}`;
     if (lastRouteCalcKeyRef.current === key) {
       return;
     }
@@ -108,7 +110,7 @@ export const useRouteCalculation = () => {
           const res: CartowayResponse = await routerServiceRef.current!.calculateRoute(
             origin,
             destination,
-            { mode, geometry: true, dimension, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track }
+            { mode, geometry: true, dimension, motorway: options?.motorway, toll: options?.toll, low_emission_zone: options?.low_emission_zone, track: options?.track, viapoints: options?.viapoints }
           );
           return { mode, dimension, res };
         })
