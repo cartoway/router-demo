@@ -4,7 +4,7 @@
 // Usage:
 //   node scripts/sync-router-modes.mjs --url "https://router.cartoway.com/0.1/capability?api_key=demo"
 // Or provide API URL and key via env vars:
-//   VITE_ROUTER_API_URL, VITE_ROUTER_API_KEY
+//   VITE_ROUTER_API_BUILD_URL, VITE_ROUTER_API_KEY
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -50,9 +50,9 @@ const getArg = (flag) => {
 };
 
 const explicitUrl = getArg('--url');
-const baseUrl = process.env.VITE_ROUTER_API_URL || 'https://router.cartoway.com';
+const baseBuildUrl = process.env.VITE_ROUTER_API_BUILD_URL || 'https://router.cartoway.com';
 const apiKey = process.env.VITE_ROUTER_API_KEY || 'demo';
-const defaultUrl = `${baseUrl.replace(/\/$/, '')}/0.1/capability?api_key=${encodeURIComponent(apiKey)}`;
+const defaultUrl = `${baseBuildUrl.replace(/\/$/, '')}/0.1/capability?api_key=${encodeURIComponent(apiKey)}`;
 const url = explicitUrl || defaultUrl;
 
 async function main() {

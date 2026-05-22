@@ -19,7 +19,7 @@ import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature, IsolineRes
 import type { ApiRequest } from '../types/api';
 import polyline from '@mapbox/polyline';
 
-const ROUTER_BASE_URL = import.meta.env.VITE_ROUTER_API_URL || 'https://router.cartoway.com';
+const ROUTER_API_RUNTIME_URL = import.meta.env.VITE_ROUTER_API_RUNTIME_URL || 'https://router.cartoway.com';
 
 // Module-level cache for capability endpoint (the result is stable across the session)
 type CapabilityRouteEntry = {
@@ -42,7 +42,7 @@ let capabilityRawData: CapabilityResponse | null = null;
 async function fetchCapabilityRaw(apiKey: string): Promise<CapabilityResponse> {
   if (capabilityRawData) return capabilityRawData;
   if (capabilityRawPromise) return capabilityRawPromise;
-  const url = `${ROUTER_BASE_URL}/0.1/capability?api_key=${encodeURIComponent(apiKey)}`;
+  const url = `${ROUTER_API_RUNTIME_URL}/0.1/capability?api_key=${encodeURIComponent(apiKey)}`;
   capabilityRawPromise = fetch(url, { headers: { 'Accept': 'application/json' } })
     .then(async (res) => {
       if (!res.ok) {
@@ -174,7 +174,7 @@ export class RouterApiService {
 
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
-    const url = `${ROUTER_BASE_URL}/0.1/routes?${params}`;
+    const url = `${ROUTER_API_RUNTIME_URL}/0.1/routes?${params}`;
 
     // Log request start
     const request: ApiRequest = {
@@ -337,7 +337,7 @@ export class RouterApiService {
       sentOptions.track = opts.track;
     }
 
-    const url = `${ROUTER_BASE_URL}/0.1/isoline?${params}`;
+    const url = `${ROUTER_API_RUNTIME_URL}/0.1/isoline?${params}`;
 
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
