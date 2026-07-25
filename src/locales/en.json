@@ -58,6 +58,7 @@
     "title": "Route Results",
     "fastest": "Fastest",
     "shortest": "Shortest",
+    "leastPolluting": "Least polluting",
     "totalWithParking": "Total with parking",
     "routeTime": "Route"
   },

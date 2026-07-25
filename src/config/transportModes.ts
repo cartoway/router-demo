@@ -192,6 +192,34 @@ export const isDevTransportMode = (modeId: string): boolean => {
   return Array.isArray(unknownModes) && unknownModes.includes(modeId);
 };
 
+// CO2 emission factors in kilograms per kilometer
+// https://agirpourlatransition.ademe.fr/particuliers/evaluer-son-impact/calculer-empreinte-carbone/calculer-emissions-carbone-trajets
+export const CO2_EMISSIONS: Record<string, number> = {
+  car:      0.140,
+  scooter:  0.080,
+  van:      0.320,
+  truck_75: 0.350,
+  truck_10: 0.400,
+  truck_12: 0.450,
+  truck_19: 0.600,
+  truck_26: 0.750,
+  truck_32: 0.900,
+  truck_44: 1.100,
+  cargo_bike: 0,
+  bicycle:  0,
+  foot:     0,
+};
+
+export const getCo2Emission = (modeId: string): number | undefined => {
+  return CO2_EMISSIONS[modeId];
+};
+
+export const calculateCo2 = (modeId: string, distanceMeters: number): number | undefined => {
+  const factor = CO2_EMISSIONS[modeId];
+  if (factor === undefined) return undefined;
+  return Math.round(factor * (distanceMeters / 1000) * 100) / 100; // kg
+};
+
 // Parking time in seconds per vehicle type
 export const PARKING_TIMES: Record<string, number> = {
   car:      7 * 60,

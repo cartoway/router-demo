@@ -21,10 +21,10 @@ import {
   faClock,
   faLocationDot,
   faBolt,
-  faSquareParking
+  faSquareParking,
+  faDroplet,
 } from '@fortawesome/free-solid-svg-icons';
-import { RouteResult } from '../types/route';
-import { getModeLabel, getModeIcon, PARKING_TIMES } from '../config/transportModes';
+import { getModeLabel, getModeIcon, PARKING_TIMES, calculateCo2, CO2_EMISSIONS } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 import { ApiRequest } from '../types/api';
 import ApiRequestsPanel from './ApiRequestsPanel';
@@ -72,6 +72,18 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
     }
     return `${Math.round(meters)}\u00a0m`;
   };
+
+  const formatCo2 = (kg: number): string => {
+    if (kg >= 1) {
+      return `${kg.toFixed(2)}\u00a0kg\u00a0CO\u2082`;
+    }
+    return `${(kg * 1000).toFixed(0)}\u00a0g\u00a0CO\u2082`;
+  };
+
+  const co2Values = validRoutes
+    .map(r => ({ mode: r.mode, co2: calculateCo2(r.mode, r.distance) }))
+    .filter(v => v.co2 !== undefined && CO2_EMISSIONS[v.mode] >= 0);
+  const lowestCo2 = co2Values.length > 0 ? Math.min(...co2Values.map(v => v.co2!)) : null;
 
   return (
     <div className="space-y-6">
@@ -135,6 +147,18 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                           <span>{formatDuration(parkingTime)}</span>
                         </div>
                       )}
+                      {(() => {
+                        const co2 = calculateCo2(route.mode, route.distance);
+                        if (co2 === undefined) return null;
+                        return (
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            <FontAwesomeIcon icon={faDroplet} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-gray-700">
+                              {formatCo2(co2)}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="text-xs text-gray-600">
@@ -153,6 +177,17 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                         {t('routeResults.shortest')}
                       </div>
                     )}
+                    {!route.error && lowestCo2 !== null && (() => {
+                      const co2 = calculateCo2(route.mode, route.distance);
+                      if (co2 !== undefined && co2 === lowestCo2 && CO2_EMISSIONS[route.mode] >= 0) {
+                        return (
+                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            {t('routeResults.leastPolluting')}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               );
