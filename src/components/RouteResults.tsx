@@ -23,8 +23,9 @@ import {
   faBolt,
   faSquareParking,
   faDroplet,
+  faGasPump,
 } from '@fortawesome/free-solid-svg-icons';
-import { getModeLabel, getModeIcon, PARKING_TIMES, calculateCo2, CO2_EMISSIONS } from '../config/transportModes';
+import { getModeLabel, getModeIcon, PARKING_TIMES, calculateCo2, calculateFuelCost } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 import { ApiRequest } from '../types/api';
 import ApiRequestsPanel from './ApiRequestsPanel';
@@ -80,9 +81,13 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
     return `${(kg * 1000).toFixed(0)}\u00a0g\u00a0CO\u2082`;
   };
 
+  const formatPrice = (euros: number): string => {
+    return `${euros.toFixed(2)}\u00a0€`;
+  };
+
   const co2Values = validRoutes
     .map(r => ({ mode: r.mode, co2: calculateCo2(r.mode, r.distance) }))
-    .filter(v => v.co2 !== undefined && CO2_EMISSIONS[v.mode] >= 0);
+    .filter(v => v.co2 !== undefined);
   const lowestCo2 = co2Values.length > 0 ? Math.min(...co2Values.map(v => v.co2!)) : null;
 
   return (
@@ -159,6 +164,18 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                           </div>
                         );
                       })()}
+                      {(() => {
+                        const fuelCost = calculateFuelCost(route.mode, route.distance);
+                        if (fuelCost === undefined || fuelCost === 0) return null;
+                        return (
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            <FontAwesomeIcon icon={faGasPump} className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-gray-700">
+                              {formatPrice(fuelCost)}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="text-xs text-gray-600">
@@ -179,7 +196,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
                     )}
                     {!route.error && lowestCo2 !== null && (() => {
                       const co2 = calculateCo2(route.mode, route.distance);
-                      if (co2 !== undefined && co2 === lowestCo2 && CO2_EMISSIONS[route.mode] >= 0) {
+                      if (co2 !== undefined && co2 === lowestCo2) {
                         return (
                           <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                             {t('routeResults.leastPolluting')}

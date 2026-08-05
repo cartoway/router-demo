@@ -192,32 +192,42 @@ export const isDevTransportMode = (modeId: string): boolean => {
   return Array.isArray(unknownModes) && unknownModes.includes(modeId);
 };
 
-// CO2 emission factors in kilograms per kilometer
-// https://agirpourlatransition.ademe.fr/particuliers/evaluer-son-impact/calculer-empreinte-carbone/calculer-emissions-carbone-trajets
-export const CO2_EMISSIONS: Record<string, number> = {
-  car:      0.140,
-  scooter:  0.080,
-  van:      0.320,
-  truck_75: 0.350,
-  truck_10: 0.400,
-  truck_12: 0.450,
-  truck_19: 0.600,
-  truck_26: 0.750,
-  truck_32: 0.900,
-  truck_44: 1.100,
+// Fuel price per liter in euros
+export const FUEL_PRICE_PER_LITER = 2.000;
+
+// Fuel consumption in liters per 100 km per vehicle type
+export const FUEL_CONSUMPTION: Record<string, number> = {
+  car:      7,
+  scooter:  3,
+  van:      9,
+  truck_75: 12,
+  truck_10: 15,
+  truck_12: 17,
+  truck_19: 22,
+  truck_26: 28,
+  truck_32: 34,
+  truck_44: 42,
   cargo_bike: 0,
   bicycle:  0,
   foot:     0,
 };
 
-export const getCo2Emission = (modeId: string): number | undefined => {
-  return CO2_EMISSIONS[modeId];
+export const calculateFuelCost = (modeId: string, distanceMeters: number): number | undefined => {
+  const consumption = FUEL_CONSUMPTION[modeId];
+  if (consumption === undefined) return undefined;
+  const liters = consumption * (distanceMeters / 1000) / 100;
+  return Math.round(liters * FUEL_PRICE_PER_LITER * 100) / 100; // euros
 };
 
+// CO2 emission factor in kilograms per liter of fuel
+// https://agirpourlatransition.ademe.fr/particuliers/evaluer-son-impact/calculer-empreinte-carbone/calculer-emissions-carbone-trajets
+export const CO2_EMISSION_PER_LITER = 2.640;
+
 export const calculateCo2 = (modeId: string, distanceMeters: number): number | undefined => {
-  const factor = CO2_EMISSIONS[modeId];
-  if (factor === undefined) return undefined;
-  return Math.round(factor * (distanceMeters / 1000) * 100) / 100; // kg
+  const consumption = FUEL_CONSUMPTION[modeId];
+  if (consumption === undefined) return undefined;
+  const liters = consumption * (distanceMeters / 1000) / 100;
+  return Math.round(liters * CO2_EMISSION_PER_LITER * 100) / 100; // kg
 };
 
 // Parking time in seconds per vehicle type
