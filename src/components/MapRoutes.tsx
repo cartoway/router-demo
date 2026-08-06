@@ -4,6 +4,8 @@ import { RoutePoint, RouteResult } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
 import { isDevTransportMode } from '../config/transportModes';
 import { cleanupRouteLayers, filterValidCoordinates, addRouteSourceAndLayers, buildBoundsForRoutes, addMapOverlay, removeMapOverlay } from '../utils/map';
+import { BASE_MAP_OPTIONS } from '../config/baseMaps';
+import { BaseMapSelector } from './BaseMapSelector';
 
 interface MapRoutesProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin' | 'destination') => void;
@@ -67,6 +69,8 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
   const hitLayerIdsRef = useRef<string[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [overlays, setOverlays] = useState<{ lez: boolean; ltz: boolean; truck_restrictions: boolean; charging_station: boolean }>({ lez: false, ltz: false, truck_restrictions: false, charging_station: false });
+  const [baseMapUrl, setBaseMapUrl] = useState<string>(BASE_MAP_OPTIONS[0].url);
+  const [styleVersion, setStyleVersion] = useState(0);
 
   // Live ref — always current, avoids stale closures in stable map handlers
   const live = useRef({ origin, destination, viapoints, routes, onPointSelect, onViapointAdd, onViapointChange, onViapointRemove });
@@ -140,7 +144,7 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
     if (!mapContainer.current || map.current) return;
     const m = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://maps.cartoway.com/styles/osm-openmaptiles-gl-style/style.json',
+      style: BASE_MAP_OPTIONS[0].url,
       center: [-0.5792, 44.8378],
       zoom: 11,
     });
@@ -149,9 +153,10 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
     m.on('load', () => {
       isMapLoaded.current = true;
       setMapReady(true);
-      m.on('click', handleMapClick);
-      m.on('mousedown', handleMapMouseDown);
+      setStyleVersion(v => v + 1);
     });
+    m.on('click', handleMapClick);
+    m.on('mousedown', handleMapMouseDown);
     return () => { m.remove(); map.current = null; isMapLoaded.current = false; };
   }, []);
 
@@ -253,7 +258,7 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
       } catch {}
     }
     if (routes.length === 0) hasInitialFit.current = false;
-  }, [routes, visibleRoutes, origin, destination, mapReady]);
+  }, [routes, visibleRoutes, origin, destination, mapReady, styleVersion]);
 
   const OVERLAY_CONFIGS = [
     { key: 'lez' as const, url: 'https://maps.cartoway.com/styles/low_emission_zone/style.json', prefix: 'overlay-lez-' },
@@ -271,7 +276,15 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
         removeMapOverlay(map.current!, prefix);
       }
     });
-  }, [overlays, mapReady]);
+  }, [overlays, mapReady, styleVersion]);
+
+  const handleBaseMapChange = (url: string) => {
+    if (url === baseMapUrl) return;
+    setBaseMapUrl(url);
+    if (map.current && isMapLoaded.current) {
+      map.current.setStyle(url);
+    }
+  };
 
   const getInstructionText = () => {
     if (!origin && !destination) return t('map.instructions.selectOrigin');
@@ -303,6 +316,8 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
             <hr className="border-gray-200" />
           </>
         )}
+        <BaseMapSelector value={baseMapUrl} onChange={handleBaseMapChange} />
+        <hr className="border-gray-200" />
         <div className="text-xs font-semibold text-gray-700">{t('map.overlays.title')}</div>
         <div className="space-y-1">
           {OVERLAY_CONFIGS.map(({ key }) => (

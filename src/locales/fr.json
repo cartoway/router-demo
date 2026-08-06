@@ -82,6 +82,10 @@
       "waypoint": "Étape",
       "destination": "Destination"
     },
+    "baseMap": {
+      "title": "Fond de carte",
+      "osm": "Standard"
+    },
     "overlays": {
       "title": "Couches",
       "lez": "Zones à faibles émissions",

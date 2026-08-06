@@ -79,6 +79,10 @@
       "waypoint": "Waypoint",
       "destination": "Destination"
     },
+    "baseMap": {
+      "title": "Background map",
+      "osm": "Standard"
+    },
     "overlays": {
       "title": "Layers",
       "lez": "Low emission zones",

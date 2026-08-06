@@ -3,6 +3,8 @@ import maplibregl from 'maplibre-gl';
 import { RoutePoint } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
 import { addMapOverlay, removeMapOverlay } from '../utils/map';
+import { BASE_MAP_OPTIONS } from '../config/baseMaps';
+import { BaseMapSelector } from './BaseMapSelector';
 
 interface MapIsolinesProps {
   onPointSelect: (point: RoutePoint | null, type: 'origin') => void;
@@ -27,29 +29,31 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
   const isMapLoaded = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [overlays, setOverlays] = useState<{ lez: boolean; ltz: boolean; truck_restrictions: boolean; charging_station: boolean }>({ lez: false, ltz: false, truck_restrictions: false, charging_station: false });
+  const [baseMapUrl, setBaseMapUrl] = useState<string>(BASE_MAP_OPTIONS[0].url);
+  const [styleVersion, setStyleVersion] = useState(0);
 
-  const createClickHandler = useCallback(() => {
-    return (e: maplibregl.MapMouseEvent) => {
-      const point: RoutePoint = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-      onPointSelect(point, 'origin');
-    };
-  }, [onPointSelect]);
+  const clickHandlerRef = useRef<((e: maplibregl.MapMouseEvent) => void) | null>(null);
+  clickHandlerRef.current = (e: maplibregl.MapMouseEvent) => {
+    const point: RoutePoint = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    onPointSelect(point, 'origin');
+  };
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
-    map.current = new maplibregl.Map({
+    const m = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://maps.cartoway.com/styles/osm-openmaptiles-gl-style/style.json',
+      style: BASE_MAP_OPTIONS[0].url,
       center: [-0.5792, 44.8378],
       zoom: 11,
     });
-    map.current.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: true }), 'top-right');
-    map.current.on('load', () => {
+    map.current = m;
+    m.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: true }), 'top-right');
+    m.on('load', () => {
       isMapLoaded.current = true;
       setMapReady(true);
-      const clickHandler = createClickHandler();
-      map.current!.on('click', clickHandler);
+      setStyleVersion(v => v + 1);
     });
+    m.on('click', (e) => clickHandlerRef.current?.(e));
     return () => { if (map.current) { map.current.remove(); map.current = null; isMapLoaded.current = false; } };
   }, []);
 
@@ -107,7 +111,7 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
         map.current!.addLayer({ id: `${layerId}-outline`, type: 'line', source: layerId, paint: { 'line-color': iso.color, 'line-width': 2, 'line-opacity': 0.9 } });
       } catch {}
     });
-  }, [isolines, mapReady]);
+  }, [isolines, mapReady, styleVersion]);
 
   const OVERLAY_CONFIGS = [
     { key: 'lez' as const, url: 'https://maps.cartoway.com/styles/low_emission_zone/style.json', prefix: 'overlay-lez-' },
@@ -125,7 +129,15 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
         removeMapOverlay(map.current!, prefix);
       }
     });
-  }, [overlays, mapReady]);
+  }, [overlays, mapReady, styleVersion]);
+
+  const handleBaseMapChange = (url: string) => {
+    if (url === baseMapUrl) return;
+    setBaseMapUrl(url);
+    if (map.current && isMapLoaded.current) {
+      map.current.setStyle(url);
+    }
+  };
 
   return (
     <div className="relative h-full">
@@ -144,6 +156,8 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
             <hr className="border-gray-200" />
           </>
         )}
+        <BaseMapSelector value={baseMapUrl} onChange={handleBaseMapChange} />
+        <hr className="border-gray-200" />
         <div className="text-xs font-semibold text-gray-700">{t('map.overlays.title')}</div>
         <div className="space-y-1">
           {OVERLAY_CONFIGS.map(({ key }) => (
