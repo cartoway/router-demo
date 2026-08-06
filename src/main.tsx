@@ -21,6 +21,7 @@ import App from './App.tsx'
 import { TranslationProvider } from './contexts/TranslationContext.tsx'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import './config/fontawesome.ts' // Import Font Awesome configuration
 
 createRoot(document.getElementById('root')!).render(

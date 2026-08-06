@@ -15,8 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import type { LayerSpecification, SourceSpecification } from '@maplibre/maplibre-gl-style-spec';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { RoutePoint, RouteResult } from '../types/route';
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 export function isValidLngLat(lng: number, lat: number): boolean {
   return (
@@ -113,17 +117,17 @@ export async function addMapOverlay(map: maplibregl.Map, url: string, prefix: st
   for (const [id, source] of Object.entries(style.sources || {})) {
     const prefixedId = prefix + id;
     if (!map.getSource(prefixedId)) {
-      map.addSource(prefixedId, source as maplibregl.SourceSpecification);
+      map.addSource(prefixedId, source as SourceSpecification);
     }
   }
-  for (const layer of (style.layers || []) as maplibregl.LayerSpecification[]) {
+  for (const layer of (style.layers || []) as LayerSpecification[]) {
     const prefixedLayerId = prefix + layer.id;
     if (!map.getLayer(prefixedLayerId)) {
-      const modifiedLayer: maplibregl.LayerSpecification = {
+      const modifiedLayer = {
         ...layer,
         id: prefixedLayerId,
-        ...((layer as any).source ? { source: prefix + (layer as any).source } : {}),
-      } as maplibregl.LayerSpecification;
+        ...('source' in layer && layer.source ? { source: prefix + layer.source } : {}),
+      } as LayerSpecification;
       map.addLayer(modifiedLayer);
     }
   }
@@ -136,7 +140,7 @@ export function removeMapOverlay(map: maplibregl.Map, prefix: string): void {
     (style.layers || []).forEach((layer) => {
       if (layer.id.startsWith(prefix) && map.getLayer(layer.id)) map.removeLayer(layer.id);
     });
-    Object.keys((style as any).sources || {}).forEach((id) => {
+    Object.keys(style.sources || {}).forEach((id) => {
       if (id.startsWith(prefix) && map.getSource(id)) map.removeSource(id);
     });
   } catch {}

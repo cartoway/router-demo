@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { RoutePoint } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
 import { addMapOverlay, removeMapOverlay } from '../utils/map';
@@ -48,7 +48,7 @@ export const MapIsolines: React.FC<MapIsolinesProps> = ({
     });
     map.current = m;
     m.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: true }), 'top-right');
-    m.on('load', () => {
+    m.on('style.load', () => {
       isMapLoaded.current = true;
       setMapReady(true);
       setStyleVersion(v => v + 1);

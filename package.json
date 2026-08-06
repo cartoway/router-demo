@@ -27,8 +27,9 @@
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@maplibre/maplibre-gl-style-spec": "^26.2.1",
     "@mapbox/polyline": "^1.2.1",
-    "maplibre-gl": "^4.0.0",
+    "maplibre-gl": "^6.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.2"

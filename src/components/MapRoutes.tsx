@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { RoutePoint, RouteResult } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
 import { isDevTransportMode } from '../config/transportModes';
@@ -150,7 +150,7 @@ export const MapRoutes: React.FC<MapRoutesProps> = ({
     });
     map.current = m;
     m.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: true }), 'top-right');
-    m.on('load', () => {
+    m.on('style.load', () => {
       isMapLoaded.current = true;
       setMapReady(true);
       setStyleVersion(v => v + 1);
