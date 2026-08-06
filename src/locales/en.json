@@ -81,7 +81,8 @@
     },
     "baseMap": {
       "title": "Background map",
-      "osm": "Standard"
+      "osm": "Standard",
+      "bicycle": "Bicycle"
     },
     "overlays": {
       "title": "Layers",

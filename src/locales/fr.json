@@ -84,7 +84,8 @@
     },
     "baseMap": {
       "title": "Fond de carte",
-      "osm": "Standard"
+      "osm": "Standard",
+      "bicycle": "Vélo"
     },
     "overlays": {
       "title": "Couches",
