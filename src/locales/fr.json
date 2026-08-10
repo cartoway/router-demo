@@ -97,7 +97,7 @@
   },
   "transportModes": {
     "car": "Voiture",
-    "cargo_bike": "Vélo cargo",
+    "cargo_ebike": "Vélo cargo élec.",
     "pedestrian": "Piéton",
     "scooter": "Scooter",
     "van": "Fourgon",
@@ -109,6 +109,7 @@
     "truck_32": "Camion <32t",
     "truck_44": "Camion <44t",
     "bicycle": "Vélo",
+    "ebike": "Vélo élec.",
     "foot": "À pied"
   },
   "errors": {

@@ -63,7 +63,7 @@ function App() {
       return ACTIVE_TRANSPORT_MODES;
     }
     const enabledModeIds = ENABLED_TRANSPORT_MODES.map((mode: TransportMode) => mode.id);
-    return enabledModeIds.length >= 2 ? enabledModeIds.slice(0, 2) : ['car', 'cargo_bike'];
+    return enabledModeIds.length >= 2 ? enabledModeIds.slice(0, 2) : ['car', 'cargo_ebike'];
   });
   const [visibleRoutes, setVisibleRoutes] = useState<string[]>([]);
   const [isDevMode, setIsDevMode] = useState(false);

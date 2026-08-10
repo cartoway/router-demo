@@ -94,7 +94,7 @@
   },
   "transportModes": {
     "car": "Car",
-    "cargo_bike": "Cargo bike",
+    "cargo_ebike": "Cargo elec. bike",
     "pedestrian": "Pedestrian",
     "scooter": "Scooter",
     "van": "Van",
@@ -106,6 +106,7 @@
     "truck_32": "Truck <32t",
     "truck_44": "Truck <44t",
     "bicycle": "Bicycle",
+    "ebike": "Elec. Bicycle",
     "foot": "Foot"
   },
   "errors": {

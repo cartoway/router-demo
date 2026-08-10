@@ -18,6 +18,8 @@
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faCar,
+  faTruckRampBox,
+  faBicycle,
   faPersonBiking,
   faPersonWalking,
   faMotorcycle,
@@ -40,6 +42,9 @@ import {
 // Add all icons to the library
 library.add(
   faCar,
+  faMotorcycle,
+  faTruckRampBox,
+  faBicycle,
   faPersonBiking,
   faPersonWalking,
   faMotorcycle,
@@ -62,7 +67,9 @@ library.add(
 // Export commonly used icons for easy access
 export const icons = {
   car: faCar,
-  bicycle: faPersonBiking,
+  bicycle: faBicycle,
+  cargo_ebike: faTruckRampBox,
+  ebike: faMotorcycle,
   pedestrian: faPersonWalking,
   bus: faBus,
   truck: faTruck,

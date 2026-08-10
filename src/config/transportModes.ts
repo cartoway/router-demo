@@ -16,13 +16,14 @@
  */
 
 import {
+  faBicycle,
   faCar,
-  faPersonBiking,
   faMotorcycle,
+  faPersonWalking,
   faToolbox,
   faTruck,
+  faTruckRampBox,
   faVanShuttle,
-  faPersonWalking,
 } from '@fortawesome/free-solid-svg-icons';
 import unknownModes from './unknownModes.json';
 import availableModes from './availableModes.json';
@@ -37,7 +38,7 @@ export interface TransportMode {
 
 const ALL_MODES_BASE: Array<{ id: string; icon: IconDefinition; color: string }> = [
   { id: 'car', icon: faCar, color: '#2563EB' },
-  { id: 'cargo_bike', icon: faPersonBiking, color: '#059669' },
+  { id: 'cargo_ebike', icon: faTruckRampBox, color: '#059669' },
   { id: 'scooter', icon: faMotorcycle, color: '#8B5CF6' },
   { id: 'van', icon: faVanShuttle, color: '#FCC419' },
   { id: 'truck_75', icon: faTruck, color: '#7C2D12' },
@@ -47,7 +48,8 @@ const ALL_MODES_BASE: Array<{ id: string; icon: IconDefinition; color: string }>
   { id: 'truck_26', icon: faTruck, color: '#B91C1C' },
   { id: 'truck_32', icon: faTruck, color: '#DC2626' },
   { id: 'truck_44', icon: faTruck, color: '#EF4444' },
-  { id: 'bicycle', icon: faPersonBiking, color: '#16A34A' },
+  { id: 'bicycle', icon: faBicycle, color: '#16A34A' },
+  { id: 'ebike', icon: faMotorcycle, color: '#059669' },
   { id: 'foot', icon: faPersonWalking, color: '#6B7280' },
 ];
 
@@ -87,7 +89,7 @@ const getActiveModesFromEnv = (): string[] => {
 
   if (!envModes) {
     // Default active modes if no environment variable is set
-    return ['car', 'cargo_bike'];
+    return ['car', 'cargo_ebike'];
   }
 
   const activeModes = envModes.split(',').map((mode: string) => mode.trim()).filter((mode: string) => mode.length > 0);
@@ -207,8 +209,9 @@ export const FUEL_CONSUMPTION: Record<string, number> = {
   truck_26: 28,
   truck_32: 34,
   truck_44: 42,
-  cargo_bike: 0,
+  cargo_ebike: 0,
   bicycle:  0,
+  ebike:    0,
   foot:     0,
 };
 

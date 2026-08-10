@@ -38,9 +38,9 @@ const envEnabled = process.env.VITE_ENABLED_TRANSPORT_MODES;
 const KNOWN_MODES = envEnabled && envEnabled.trim().length > 0
   ? envEnabled.split(',').map(s => s.trim()).filter(Boolean)
   : [
-      'car', 'cargo_bike', 'scooter', 'van',
+      'car', 'cargo_ebike', 'scooter', 'van',
       'truck_75', 'truck_10', 'truck_12', 'truck_19', 'truck_26', 'truck_32', 'truck_44',
-      'bicycle', 'foot'
+      'bicycle', 'ebike', 'foot'
     ];
 
 const args = process.argv.slice(2);
