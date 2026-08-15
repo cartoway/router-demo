@@ -52,11 +52,12 @@ interface PointInputProps {
   onApiRequestLog?: (request: ApiRequest) => void;
   onAdornmentMouseDown?: () => void;
   onAdornmentMouseUp?: () => void;
+  leftPad?: string;
 }
 
 const PointInput: React.FC<PointInputProps> = ({
   value, onChange, onRemove, placeholder, leftAdornment, geocodeCountry, onApiRequestLog,
-  onAdornmentMouseDown, onAdornmentMouseUp,
+  onAdornmentMouseDown, onAdornmentMouseUp, leftPad = 'pl-8',
 }) => {
   const [query, setQuery] = useState(() => value ? fmtCoords(value) : '');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
@@ -128,7 +129,7 @@ const PointInput: React.FC<PointInputProps> = ({
         type="text"
         autoComplete="off"
         placeholder={placeholder}
-        className="w-full h-9 pl-8 pr-8 border rounded text-sm bg-white"
+        className={`w-full h-9 ${leftPad} pr-8 border rounded text-sm bg-white`}
         value={query}
         onChange={e => {
           const text = e.target.value;
@@ -265,7 +266,10 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
           />
 
           {/* Viapoints */}
-          {viapoints.map((via, idx) => (
+          {viapoints.map((via, idx) => {
+            const num = viapoints.slice(0, idx + 1).filter(v => v !== null).length;
+            const displayNum = via ? num : num + 1;
+            return (
             <div
               key={idx}
               draggable
@@ -289,9 +293,13 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
                 value={via}
                 onChange={p => onViapointChange(idx, p)}
                 onRemove={() => via ? onViapointChange(idx, null) : onViapointRemove(idx)}
-                placeholder={`${t('routeControls.waypoint.addressPlaceholder')} ${idx + 1}`}
+                placeholder={`${t('routeControls.waypoint.addressPlaceholder')} ${displayNum}`}
+                leftPad={via ? 'pl-11' : 'pl-8'}
                 leftAdornment={
-                  <span className="flex items-center justify-center w-4 h-4 cursor-grab active:cursor-grabbing">
+                  <span className="flex items-center space-x-1 cursor-grab active:cursor-grabbing">
+                    {via && (
+                      <span className="flex items-center justify-center w-4 h-4 bg-orange-400 rounded-full border-2 border-white shadow-sm text-white text-[9px] font-bold leading-none">{displayNum}</span>
+                    )}
                     <FontAwesomeIcon icon={faGripLines} className="h-3 w-3 text-orange-400" />
                   </span>
                 }
@@ -301,7 +309,8 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
                 onApiRequestLog={onApiRequestLog}
               />
             </div>
-          ))}
+            );
+          })}
 
           {/* Add viapoint button */}
           <button
