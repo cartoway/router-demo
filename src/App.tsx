@@ -443,7 +443,7 @@ function App() {
         <Route
           path="/"
           element={
-            <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6 pb-20 lg:pb-0">
+            <div className="max-w-full mx-auto px-0 lg:px-4 py-0 lg:py-6 pb-20 lg:pb-0">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4">
 
                 {/* Left Sidebar - Controls */}
@@ -513,7 +513,7 @@ function App() {
 
       {/* Footer - Mobile only */}
       <footer className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t py-3 z-10">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4">
           <div className="flex items-center justify-between">
             {/* Mobile bottom nav */}
             <nav className="flex items-center gap-6">

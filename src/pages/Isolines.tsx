@@ -404,7 +404,7 @@ export default function IsolinesPage({ isDevMode: isDevModeProp }: IsolinesPageP
   };
 
   return (
-    <div className="max-w-full mx-auto px-0 lg:px-8 py-0 lg:py-6 pb-20 lg:pb-0">
+    <div className="max-w-full mx-auto px-0 lg:px-4 py-0 lg:py-6 pb-20 lg:pb-0">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-4">
         <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 p-4 lg:p-0">
           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-3 sm:space-y-3">
