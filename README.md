@@ -51,7 +51,6 @@ Configuration is loaded at **runtime** from `/env.js` (not at build time). The f
 ```js
 var config = {
     "ROUTER_API_KEY": "demo",
-    "ROUTER_API_BUILD_URL": "https://router.cartoway.com",
     "ROUTER_API_RUNTIME_URL": "https://router.cartoway.com",
     "ENABLED_TRANSPORT_MODES": ["car", "cargo_ebike", "scooter", "van", "truck_19"],
     "ACTIVE_TRANSPORT_MODES": ["car", "cargo_ebike"],
@@ -72,8 +71,7 @@ All keys are optional; sensible defaults apply when omitted.
 
 ## Configuration Keys
 
-- `ROUTER_API_BUILD_URL`: Router API base URL used by `scripts/sync-router-modes.mjs` (build-time mode sync)
-- `ROUTER_API_RUNTIME_URL`: Router API base URL used by the app in the browser (defaults to https://router.cartoway.com)
+- `ROUTER_API_RUNTIME_URL`: Router API base URL used by the app in the browser (defaults to https://router.cartoway.com). Transport modes and capabilities are fetched from this server at startup.
 - `ROUTER_API_KEY`: Router API key (defaults to 'demo')
 - `ENABLED_TRANSPORT_MODES`: Array of transport modes displayed in the interface, controlling the available options for selection and their order. The following modes are available: `car`, `cargo_ebike`, `scooter`, `van`, `truck_75`, `truck_10`, `truck_12`, `truck_19`, `truck_26`, `truck_32`, `truck_44`, `bicycle`, `ebike`, `foot`. When omitted, all modes reported by the Router API are enabled. For a complete list of modes, refer to the Router API at https://router.cartoway.com/0.1/capability.
 - `ACTIVE_TRANSPORT_MODES`: Array of transport modes pre-selected when the application starts. Must be a subset of `ENABLED_TRANSPORT_MODES`. Default: `["car", "cargo_ebike"]`

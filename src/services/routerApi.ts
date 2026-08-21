@@ -61,6 +61,12 @@ async function fetchCapabilityRaw(apiKey: string): Promise<CapabilityResponse> {
   return capabilityRawPromise;
 }
 
+// Shared runtime capability fetch (single cached request per session).
+// Used by transportModes init and RouterApiService instances alike.
+export function fetchRouterCapabilities(): Promise<CapabilityResponse> {
+  return fetchCapabilityRaw(getRouterApiKey());
+}
+
 
 interface HttpError extends Error {
   isHttpError: true;

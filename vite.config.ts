@@ -56,13 +56,4 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
   },
-  build: {
-    rollupOptions: {
-      output: {
-        entryFileNames: 'assets/route-[hash].js',
-        chunkFileNames: 'assets/route-[hash].js',
-        assetFileNames: 'assets/route-[hash][extname]'
-      }
-    }
-  }
 });

@@ -25,10 +25,9 @@ import {
   faTruckRampBox,
   faVanShuttle,
 } from '@fortawesome/free-solid-svg-icons';
-import unknownModes from './unknownModes.json';
-import availableModes from './availableModes.json';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { getEnabledTransportModes, getActiveTransportModes } from './env';
+import { fetchRouterCapabilities } from '../services/routerApi';
 
 export interface TransportMode {
   id: string;
@@ -54,60 +53,46 @@ const ALL_MODES_BASE: Array<{ id: string; icon: IconDefinition; color: string }>
   { id: 'foot', icon: faPersonWalking, color: '#6B7280' },
 ];
 
+// Runtime state: which modes the router reports as available, and which of
+// them are unknown to this app (rendered with a dev icon and flashy color).
+// Defaults are optimistic (all known base modes) and are replaced by
+// initTransportModes() with the capabilities fetched from the configured API.
+let availableModeIds: string[] = ALL_MODES_BASE.map((mode) => mode.id);
+let unknownModeIds: string[] = [];
+
+const DEV_MODE_COLOR = '#FF00AA';
+
 // Get enabled modes from runtime config (ENABLED_TRANSPORT_MODES in /env.js)
-const getEnabledModesFromEnv = (): string[] => {
-  const envModes = getEnabledTransportModes();
+const computeEnabledModes = (): string[] => {
+  const configModes = getEnabledTransportModes();
 
-  // Build unknown IDs list (strings only)
-  const unknownIds = (Array.isArray(unknownModes) ? unknownModes : []).filter(
-    (id: unknown): id is string => typeof id === 'string'
-  );
-
-  // Available modes (from routercapabilities)
-  const availableIds = (Array.isArray(availableModes) ? availableModes : []).filter(
-    (id: unknown): id is string => typeof id === 'string'
-  );
-
-  if (!envModes) {
-    // If no env provided, enable ALL available modes: known available + unknown
-    const all = [...availableIds, ...unknownIds];
-    return all.filter((id, idx) => all.indexOf(id) === idx);
+  if (!configModes) {
+    // If no config provided, enable ALL modes available on the router
+    return [...availableModeIds];
   }
 
-  // Only keep env-specified modes that are available
-  const requested = envModes;
-
-  const filtered = requested.filter((id: string) => availableIds.includes(id) || unknownIds.includes(id));
-  return filtered;
+  // Only keep config-specified modes that are available on the router
+  return configModes.filter((id: string) => availableModeIds.includes(id));
 };
 
 // Get active modes from runtime config (ACTIVE_TRANSPORT_MODES in /env.js, modes to be pre-selected)
-const getActiveModesFromEnv = (): string[] => {
-  const envModes = getActiveTransportModes();
+const computeActiveModes = (): string[] => {
+  const configModes = getActiveTransportModes();
 
-  if (!envModes) {
-    // Default active modes if no environment variable is set
+  if (!configModes) {
+    // Default active modes if no configuration is set
     return ['car', 'cargo_ebike'];
   }
 
-  return envModes;
+  return configModes;
 };
 
-const enabledModesFromEnv = getEnabledModesFromEnv();
-const activeModesFromEnv = getActiveModesFromEnv();
-
 // Create transport modes array respecting the order from ENABLED_TRANSPORT_MODES
-const createOrderedTransportModes = (): TransportMode[] => {
+const createOrderedTransportModes = (enabledIds: string[]): TransportMode[] => {
   // Append unknown modes with dev icon and flashy color
-  const devColor = '#FF00AA';
-  const unknownEntries = Array.isArray(unknownModes) ? unknownModes : [];
-
-  const unknownModeEntries = unknownEntries
-    .filter((id: unknown): id is string => typeof id === 'string')
-    .map((id: string) => {
-      // No prefix/base detection: always use devColor
-      return { id, icon: faToolbox as IconDefinition, color: devColor };
-    });
+  const unknownModeEntries = unknownModeIds.map((id: string) => {
+    return { id, icon: faToolbox as IconDefinition, color: DEV_MODE_COLOR };
+  });
 
   const allModes = [...ALL_MODES_BASE, ...unknownModeEntries];
 
@@ -121,7 +106,7 @@ const createOrderedTransportModes = (): TransportMode[] => {
   const orderedModes: TransportMode[] = [];
 
   // First, add modes in the order specified by ENABLED_TRANSPORT_MODES
-  enabledModesFromEnv.forEach(modeId => {
+  enabledIds.forEach(modeId => {
     const mode = modesMap[modeId];
     if (mode) {
       orderedModes.push({
@@ -133,7 +118,7 @@ const createOrderedTransportModes = (): TransportMode[] => {
 
   // Then, add any remaining modes that weren't in ENABLED_TRANSPORT_MODES (disabled)
   allModes.forEach(mode => {
-    if (!enabledModesFromEnv.includes(mode.id)) {
+    if (!enabledIds.includes(mode.id)) {
       orderedModes.push({
         ...mode,
         enabled: false
@@ -144,25 +129,59 @@ const createOrderedTransportModes = (): TransportMode[] => {
   return orderedModes;
 };
 
-export const TRANSPORT_MODES: TransportMode[] = createOrderedTransportModes();
+export let TRANSPORT_MODES: TransportMode[] = [];
+export let TRANSPORT_MODES_MAP: Record<string, TransportMode> = {};
+export let ENABLED_TRANSPORT_MODES: TransportMode[] = [];
+export let ACTIVE_TRANSPORT_MODES: string[] = [];
+export let ROUTE_COLORS: Record<string, string> = {};
 
-// Create a map for quick lookup
-export const TRANSPORT_MODES_MAP: Record<string, TransportMode> = TRANSPORT_MODES.reduce((acc, mode) => {
-  acc[mode.id] = mode;
-  return acc;
-}, {} as Record<string, TransportMode>);
+const refreshTransportModes = (): void => {
+  TRANSPORT_MODES = createOrderedTransportModes(computeEnabledModes());
 
-// Get only enabled modes
-export const ENABLED_TRANSPORT_MODES: TransportMode[] = TRANSPORT_MODES.filter(mode => mode.enabled);
+  // Create a map for quick lookup
+  TRANSPORT_MODES_MAP = TRANSPORT_MODES.reduce((acc, mode) => {
+    acc[mode.id] = mode;
+    return acc;
+  }, {} as Record<string, TransportMode>);
 
-// Get active modes (modes that should be pre-selected)
-export const ACTIVE_TRANSPORT_MODES: string[] = activeModesFromEnv;
+  // Get only enabled modes
+  ENABLED_TRANSPORT_MODES = TRANSPORT_MODES.filter(mode => mode.enabled);
 
-// Export colors map for backward compatibility
-export const ROUTE_COLORS: Record<string, string> = TRANSPORT_MODES.reduce((acc, mode) => {
-  acc[mode.id] = mode.color;
-  return acc;
-}, {} as Record<string, string>);
+  // Export colors map for backward compatibility
+  ROUTE_COLORS = TRANSPORT_MODES.reduce((acc, mode) => {
+    acc[mode.id] = mode.color;
+    return acc;
+  }, {} as Record<string, string>);
+};
+
+refreshTransportModes();
+ACTIVE_TRANSPORT_MODES = computeActiveModes();
+
+/**
+ * Fetch the router capabilities from the configured runtime API and rebuild
+ * the transport mode lists accordingly. Must be awaited before the first
+ * React render; on failure the optimistic defaults are kept.
+ */
+export async function initTransportModes(): Promise<void> {
+  try {
+    const capabilities = await fetchRouterCapabilities();
+    const routeEntries = Array.isArray(capabilities?.route) ? capabilities.route : [];
+    const serverModes = routeEntries
+      .map((entry) => entry?.mode)
+      .filter((mode): mode is string => typeof mode === 'string' && mode.trim().length > 0)
+      .map((mode) => mode.trim());
+
+    availableModeIds = serverModes;
+    unknownModeIds = serverModes.filter(
+      (id) => !ALL_MODES_BASE.some((base) => base.id === id)
+    );
+
+    ACTIVE_TRANSPORT_MODES = computeActiveModes();
+    refreshTransportModes();
+  } catch (error) {
+    console.warn('Failed to load router capabilities; using default transport modes.', error);
+  }
+}
 
 // Helper functions
 export const getModeLabel = (modeId: string, t?: (key: string) => string): string => {
@@ -188,7 +207,7 @@ export const isModeEnabled = (modeId: string): boolean => {
 };
 
 export const isDevTransportMode = (modeId: string): boolean => {
-  return Array.isArray(unknownModes) && unknownModes.includes(modeId);
+  return unknownModeIds.includes(modeId);
 };
 
 // Fuel price per liter in euros

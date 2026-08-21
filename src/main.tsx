@@ -23,13 +23,18 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './config/fontawesome.ts' // Import Font Awesome configuration
+import { initTransportModes } from './config/transportModes.ts'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-    <TranslationProvider>
-      <App />
-    </TranslationProvider>
-    </BrowserRouter>
-  </StrictMode>,
-)
+// Load router capabilities from the configured API before the first render so
+// transport mode lists are final; falls back to defaults on failure.
+initTransportModes().finally(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter>
+      <TranslationProvider>
+        <App />
+      </TranslationProvider>
+      </BrowserRouter>
+    </StrictMode>,
+  )
+})
