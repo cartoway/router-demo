@@ -45,7 +45,7 @@ const formatApiTimestamp = (date: Date) => {
 
 const hasDataInUrl = (url: string) => url.includes('?') || url.includes('&');
 
-export const ApiRequestsPanel: React.FC<ApiRequestsPanelProps> = ({
+const ApiRequestsPanel: React.FC<ApiRequestsPanelProps> = ({
   isDevMode = false,
   apiRequests = [],
   onClearApiRequests,

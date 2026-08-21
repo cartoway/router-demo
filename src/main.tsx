@@ -15,14 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { StrictMode } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { TranslationProvider } from './contexts/TranslationContext.tsx'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import './config/fontawesome.ts' // Import Font Awesome configuration
 import { initTransportModes } from './config/transportModes.ts'
 
 // Load router capabilities from the configured API before the first render so

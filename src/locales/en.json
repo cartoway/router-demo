@@ -1,8 +1,10 @@
 {
   "app": {
     "title": "Router demo",
-    "subtitle": "Multi-modal route calculator",
-    "poweredBy": "Powered by Cartoway"
+    "subtitle": {
+      "routes": "Multi-modal route calculator",
+      "isolines": "Multi-modal isoline calculator"
+    }
   },
   "routeControls": {
     "title": "Route Calculator",
@@ -17,17 +19,9 @@
       "unsupportedLabel": "Not supported:"
     },
     "origin": {
-      "label": "Origin",
-      "defined": "✓ Defined",
-      "notDefined": "Not defined",
-      "removeTooltip": "Remove origin",
       "addressPlaceholder": "Origin address"
     },
     "destination": {
-      "label": "Destination",
-      "defined": "✓ Defined",
-      "notDefined": "Not defined",
-      "removeTooltip": "Remove destination",
       "addressPlaceholder": "Destination address"
     },
     "transportModes": {
@@ -36,7 +30,6 @@
     },
     "waypoint": {
       "addButton": "Add waypoint",
-      "removeTooltip": "Remove waypoint",
       "addressPlaceholder": "Waypoint address"
     },
     "isolines": {
@@ -45,7 +38,6 @@
       "time": "Time",
       "distance": "Distance",
       "size": "Size",
-      "calculate": "Calculate",
       "needOrigin": "Select an origin on the map first",
       "hint": "Uses the origin as center. Current selected modes will be used. Recalculate isolines by changing the origin.",
       "maxReached": "Maximum number of profiles reached"
@@ -59,7 +51,6 @@
     "fastest": "Fastest",
     "shortest": "Shortest",
     "leastPolluting": "Least polluting",
-    "totalWithParking": "Total with parking",
     "routeTime": "Route"
   },
   "nav": {
@@ -95,7 +86,6 @@
   "transportModes": {
     "car": "Car",
     "cargo_ebike": "Cargo elec. bike",
-    "pedestrian": "Pedestrian",
     "scooter": "Scooter",
     "van": "Van",
     "truck_75": "Truck <7.5t",
@@ -110,11 +100,8 @@
     "foot": "Foot"
   },
   "errors": {
-    "requestError": "Request Error",
-    "apiMessage": "API Message:",
     "noRoutesFound": "No routes found for selected modes",
     "calculationError": "Error calculating route.",
-    "requestSkipped": "Request skipped - previously failed",
     "http400": "Some required parameters are missing",
     "http401": "Your api_key is not valid",
     "http404": "Transportation mode is not supported",

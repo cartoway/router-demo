@@ -431,43 +431,6 @@ export class RouterApiService {
     };
   }
 
-  async calculateMultipleRoutes(
-    origin: RoutePoint,
-    destination: RoutePoint,
-    modes: string[],
-    commonOptions?: Partial<Pick<RouteOptions, 'motorway' | 'toll' | 'low_emission_zone' | 'track'>>
-  ): Promise<CartowayResponse[]> {
-    const promises = modes.map(mode =>
-      this.calculateRoute(origin, destination, {
-        mode,
-        geometry: true,
-        ...commonOptions,
-      })
-    );
-
-    const results = await Promise.allSettled(promises);
-    const successfulResults = results
-      .filter((result): result is PromiseFulfilledResult<CartowayResponse> =>
-        result.status === 'fulfilled'
-      )
-      .map(result => result.value);
-
-    // If all requests failed, throw an error
-    if (successfulResults.length === 0 && results.length > 0) {
-      const firstError = results.find(result => result.status === 'rejected');
-      if (firstError && firstError.status === 'rejected') {
-        // Extract the error message from the Error object
-        const errorMessage = firstError.reason instanceof Error
-          ? firstError.reason.message
-          : String(firstError.reason);
-        throw new Error(errorMessage);
-      }
-      throw new Error(this.translate ? this.translate('errors.allRoutesFailed') : 'All route calculations failed');
-    }
-
-    return successfulResults;
-  }
-
   async getCapabilities(): Promise<Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }>> {
     const data = await fetchCapabilityRaw(this.apiKey);
     const map: Record<string, { motorway: boolean; toll: boolean; low_emission_zone: boolean; track: boolean }> = {};

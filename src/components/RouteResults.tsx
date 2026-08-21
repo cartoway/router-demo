@@ -28,6 +28,7 @@ import {
 import { getModeLabel, getModeIcon, PARKING_TIMES, calculateCo2, calculateFuelCost } from '../config/transportModes';
 import { useTranslation } from '../contexts/TranslationContext';
 import { ApiRequest } from '../types/api';
+import { RouteResult } from '../types/route';
 import ApiRequestsPanel from './ApiRequestsPanel';
 
 interface RouteResultsProps {

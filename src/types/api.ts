@@ -26,6 +26,4 @@ export interface ApiRequest {
   requestData?: Record<string, unknown>;
   responseData?: Record<string, unknown>;
   error?: string;
-  errorType?: 'network' | 'http' | 'api' | 'parsing' | 'timeout';
-  httpStatus?: number;
 }

@@ -129,7 +129,7 @@ const createOrderedTransportModes = (enabledIds: string[]): TransportMode[] => {
   return orderedModes;
 };
 
-export let TRANSPORT_MODES: TransportMode[] = [];
+let TRANSPORT_MODES: TransportMode[] = [];
 export let TRANSPORT_MODES_MAP: Record<string, TransportMode> = {};
 export let ENABLED_TRANSPORT_MODES: TransportMode[] = [];
 export let ACTIVE_TRANSPORT_MODES: string[] = [];
@@ -202,19 +202,15 @@ export const getModeIcon = (modeId: string) => {
   return TRANSPORT_MODES_MAP[modeId]?.icon;
 };
 
-export const isModeEnabled = (modeId: string): boolean => {
-  return TRANSPORT_MODES_MAP[modeId]?.enabled || false;
-};
-
 export const isDevTransportMode = (modeId: string): boolean => {
   return unknownModeIds.includes(modeId);
 };
 
 // Fuel price per liter in euros
-export const FUEL_PRICE_PER_LITER = 2.000;
+const FUEL_PRICE_PER_LITER = 2.000;
 
 // Fuel consumption in liters per 100 km per vehicle type
-export const FUEL_CONSUMPTION: Record<string, number> = {
+const FUEL_CONSUMPTION: Record<string, number> = {
   car:      7,
   scooter:  3,
   van:      9,
@@ -240,7 +236,7 @@ export const calculateFuelCost = (modeId: string, distanceMeters: number): numbe
 
 // CO2 emission factor in kilograms per liter of fuel
 // https://agirpourlatransition.ademe.fr/particuliers/evaluer-son-impact/calculer-empreinte-carbone/calculer-emissions-carbone-trajets
-export const CO2_EMISSION_PER_LITER = 2.640;
+const CO2_EMISSION_PER_LITER = 2.640;
 
 export const calculateCo2 = (modeId: string, distanceMeters: number): number | undefined => {
   const consumption = FUEL_CONSUMPTION[modeId];

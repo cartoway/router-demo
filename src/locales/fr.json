@@ -4,8 +4,7 @@
     "subtitle": {
       "routes": "Calculateur d'itinéraires multi-modal",
       "isolines": "Calculateur d'isolignes multi-modal"
-    },
-    "poweredBy": "Powered by Cartoway"
+    }
   },
   "routeControls": {
     "title": "Calculateur d'itinéraires",
@@ -20,17 +19,9 @@
       "unsupportedLabel": "Non pris en charge :"
     },
     "origin": {
-      "label": "Origine",
-      "defined": "✓ Définie",
-      "notDefined": "Non définie",
-      "removeTooltip": "Supprimer l'origine",
       "addressPlaceholder": "Adresse d'origine"
     },
     "destination": {
-      "label": "Destination",
-      "defined": "✓ Définie",
-      "notDefined": "Non définie",
-      "removeTooltip": "Supprimer la destination",
       "addressPlaceholder": "Adresse de destination"
     },
     "transportModes": {
@@ -39,7 +30,6 @@
     },
     "waypoint": {
       "addButton": "Ajouter une étape",
-      "removeTooltip": "Supprimer l'étape",
       "addressPlaceholder": "Adresse de l'étape"
     },
     "isolines": {
@@ -48,7 +38,6 @@
       "time": "Temps",
       "distance": "Distance",
       "size": "Taille",
-      "calculate": "Calculer",
       "needOrigin": "Sélectionnez d’abord une origine sur la carte",
       "hint": "Utilise l’origine comme centre. Les modes sélectionnés seront utilisés. Recalcul des isolignes en changeant l'origine.",
       "maxReached": "Nombre maximal de profils atteint"
@@ -62,7 +51,6 @@
     "fastest": "Plus rapide",
     "shortest": "Plus court",
     "leastPolluting": "Moins polluant",
-    "totalWithParking": "Total avec stationnement",
     "routeTime": "Trajet"
   },
   "nav": {
@@ -98,7 +86,6 @@
   "transportModes": {
     "car": "Voiture",
     "cargo_ebike": "Vélo cargo élec.",
-    "pedestrian": "Piéton",
     "scooter": "Scooter",
     "van": "Fourgon",
     "truck_75": "Camion <7,5t",
@@ -113,11 +100,8 @@
     "foot": "À pied"
   },
   "errors": {
-    "requestError": "Erreur de requête",
-    "apiMessage": "Message API :",
     "noRoutesFound": "Aucun itinéraire trouvé pour les modes sélectionnés",
     "calculationError": "Erreur lors du calcul d'itinéraire.",
-    "requestSkipped": "Requête ignorée - précédemment échouée",
     "http400": "Paramètres requis manquants",
     "http401": "Votre clé API n'est pas valide",
     "http404": "Mode de transport non supporté",

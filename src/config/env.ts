@@ -18,7 +18,7 @@
 // Runtime configuration, loaded from /env.js (see .env.js / .env.example.js).
 // The file is optional: when absent (or partially filled), code defaults apply.
 
-export interface RuntimeConfig {
+interface RuntimeConfig {
   ROUTER_API_KEY?: string;
   ROUTER_API_RUNTIME_URL?: string;
   ENABLED_TRANSPORT_MODES?: string[] | string;

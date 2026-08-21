@@ -136,7 +136,6 @@ export const useRouteCalculation = () => {
           }
         } else {
           failureCount.value++;
-          const message = r.reason instanceof Error ? r.reason.message : t('errors.calculationError');
           nextResults.push({
             mode,
             dimension,
@@ -144,7 +143,6 @@ export const useRouteCalculation = () => {
             distance: 0,
             color: ROUTE_COLORS[mode] || '#6B7280',
             error: true,
-            errorMessage: message,
           });
         }
       });

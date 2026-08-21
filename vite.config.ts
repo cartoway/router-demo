@@ -46,9 +46,6 @@ function runtimeEnvPlugin(): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), runtimeEnvPlugin()],
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
   worker: {
     format: 'es',
   },

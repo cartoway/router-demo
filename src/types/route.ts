@@ -18,12 +18,10 @@
 export interface RoutePoint {
   lat: number;
   lng: number;
-  address?: string;
 }
 
 export interface RouteOptions {
   mode: string;
-  optimize?: boolean;
   geometry?: boolean;
   dimension?: Dimension;
   motorway?: boolean;
@@ -45,7 +43,6 @@ export interface RouteResult {
   color: string;
   // When present, indicates this entry represents a failed calculation for this mode
   error?: boolean;
-  errorMessage?: string;
 }
 
 export type Dimension = 'time' | 'distance';
@@ -67,8 +64,6 @@ export interface CartowayFeature {
     router: {
       total_distance: number;
       total_time: number;
-      start_point: [number, number];
-      end_point: [number, number];
     };
   };
   type: 'Feature';

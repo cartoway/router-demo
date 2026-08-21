@@ -1,4 +1,4 @@
-export interface BaseMapOption {
+interface BaseMapOption {
   id: string;
   url: string;
   labelKey: string;

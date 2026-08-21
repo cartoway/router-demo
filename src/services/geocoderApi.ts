@@ -11,7 +11,7 @@ export interface GeocodeSuggestion {
   lng: number;
 }
 
-export interface GeocodeOptions {
+interface GeocodeOptions {
   country?: string;
 }
 

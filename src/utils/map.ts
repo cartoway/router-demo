@@ -22,7 +22,7 @@ import { RoutePoint, RouteResult } from '../types/route';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
-export function isValidLngLat(lng: number, lat: number): boolean {
+function isValidLngLat(lng: number, lat: number): boolean {
   return (
     typeof lng === 'number' &&
     typeof lat === 'number' &&
