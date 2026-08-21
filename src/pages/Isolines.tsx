@@ -7,6 +7,7 @@ import ApiRequestsPanel from '../components/ApiRequestsPanel';
 import type { ApiRequest } from '../types/api';
 import { RoutePoint } from '../types/route';
 import { useTranslation } from '../contexts/TranslationContext';
+import { getIsolineMaxProfiles } from '../config/env';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLocationDot, faTrash, faPlus, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
@@ -38,10 +39,7 @@ export default function IsolinesPage({ isDevMode: isDevModeProp }: IsolinesPageP
     low_emission_zone: false,
     track: false,
   });
-  const MAX_PROFILES = (() => {
-    const raw = Number(import.meta.env.VITE_ISOLINE_MAX_PROFILES);
-    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 6;
-  })();
+  const MAX_PROFILES = getIsolineMaxProfiles();
   const isDevMode = typeof isDevModeProp === 'boolean'
     ? isDevModeProp
     : (() => {

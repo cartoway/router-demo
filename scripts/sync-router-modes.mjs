@@ -3,45 +3,41 @@
 // Script to fetch router capability and compute available/disabled/unknown modes
 // Usage:
 //   node scripts/sync-router-modes.mjs --url "https://router.cartoway.com/0.1/capability?api_key=demo"
-// Or provide API URL and key via env vars:
-//   VITE_ROUTER_API_BUILD_URL, VITE_ROUTER_API_KEY
+// Or provide API URL and key via the runtime config file:
+//   ROUTER_API_BUILD_URL, ROUTER_API_KEY in .env.js
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// Minimal .env loader (no external dependency)
-function loadDotEnv() {
+// Minimal .env.js loader (no external dependency): evaluates the runtime config
+// file and returns its `config` object.
+function loadRuntimeConfig() {
   try {
-    const dotenvPath = resolve(process.cwd(), '.env');
-    const content = readFileSync(dotenvPath, 'utf8');
-    content.split(/\r?\n/).forEach((line) => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) return;
-      const eqIdx = trimmed.indexOf('=');
-      if (eqIdx === -1) return;
-      const key = trimmed.slice(0, eqIdx).trim();
-      let value = trimmed.slice(eqIdx + 1).trim();
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
-        value = value.slice(1, -1);
-      }
-      if (!(key in process.env)) {
-        process.env[key] = value;
-      }
-    });
+    const envPath = resolve(process.cwd(), '.env.js');
+    const content = readFileSync(envPath, 'utf8');
+    const fn = new Function(`${content}\n;return typeof config === 'object' && config !== null ? config : {};`);
+    return fn();
   } catch {}
+  return {};
 }
 
-loadDotEnv();
+const runtimeConfig = loadRuntimeConfig();
 
-// Known modes: from env if provided, else default list
-const envEnabled = process.env.VITE_ENABLED_TRANSPORT_MODES;
-const KNOWN_MODES = envEnabled && envEnabled.trim().length > 0
-  ? envEnabled.split(',').map(s => s.trim()).filter(Boolean)
-  : [
-      'car', 'cargo_ebike', 'scooter', 'van',
-      'truck_75', 'truck_10', 'truck_12', 'truck_19', 'truck_26', 'truck_32', 'truck_44',
-      'bicycle', 'ebike', 'foot'
-    ];
+const toList = (value) => {
+  if (Array.isArray(value)) return value.filter((v) => typeof v === 'string' && v.trim().length > 0);
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return null;
+};
+
+// Known modes: from config if provided, else default list
+const configEnabled = toList(runtimeConfig.ENABLED_TRANSPORT_MODES);
+const KNOWN_MODES = configEnabled ?? [
+    'car', 'cargo_ebike', 'scooter', 'van',
+    'truck_75', 'truck_10', 'truck_12', 'truck_19', 'truck_26', 'truck_32', 'truck_44',
+    'bicycle', 'ebike', 'foot'
+  ];
 
 const args = process.argv.slice(2);
 const getArg = (flag) => {
@@ -50,8 +46,12 @@ const getArg = (flag) => {
 };
 
 const explicitUrl = getArg('--url');
-const baseBuildUrl = process.env.VITE_ROUTER_API_BUILD_URL || 'https://router.cartoway.com';
-const apiKey = process.env.VITE_ROUTER_API_KEY || 'demo';
+const baseBuildUrl = typeof runtimeConfig.ROUTER_API_BUILD_URL === 'string' && runtimeConfig.ROUTER_API_BUILD_URL.trim().length > 0
+  ? runtimeConfig.ROUTER_API_BUILD_URL.trim()
+  : 'https://router.cartoway.com';
+const apiKey = typeof runtimeConfig.ROUTER_API_KEY === 'string' && runtimeConfig.ROUTER_API_KEY.trim().length > 0
+  ? runtimeConfig.ROUTER_API_KEY.trim()
+  : 'demo';
 const defaultUrl = `${baseBuildUrl.replace(/\/$/, '')}/0.1/capability?api_key=${encodeURIComponent(apiKey)}`;
 const url = explicitUrl || defaultUrl;
 
@@ -78,8 +78,8 @@ async function main() {
     const disabledKnown = KNOWN_MODES.filter(m => !available.has(m));
     const unknown = availableModes.filter(m => !knownSet.has(m));
 
-    // Suggest ENV line
-    const envLine = `VITE_ENABLED_TRANSPORT_MODES=${enabledKnown.join(',')}`;
+    // Suggest config entry
+    const envLine = `ENABLED_TRANSPORT_MODES: [${enabledKnown.map((m) => `'${m}'`).join(', ')}]`;
 
     const summary = {
       fetchedFrom: url,
@@ -105,7 +105,7 @@ async function main() {
     console.log('Enabled (known):', enabledKnown.join(','));
     console.log('Disabled (known):', disabledKnown.join(','));
     console.log('Unknown (add on the fly if needed):', unknown.join(','));
-    console.log('\nAdd this to your .env to enable known modes:');
+    console.log('\nAdd this to your .env.js to enable known modes:');
     console.log(envLine);
     console.log('\nReports written to scripts/routerModes.json and src/config/unknownModes.json');
   } catch (err) {

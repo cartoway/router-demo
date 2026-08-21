@@ -18,8 +18,9 @@
 import { RoutePoint, RouteOptions, CartowayResponse, CartowayFeature, IsolineResult, Dimension } from '../types/route';
 import type { ApiRequest } from '../types/api';
 import polyline from '@mapbox/polyline';
+import { getRouterApiRuntimeUrl, getRouterApiKey } from '../config/env';
 
-const ROUTER_API_RUNTIME_URL = import.meta.env.VITE_ROUTER_API_RUNTIME_URL || 'https://router.cartoway.com';
+const ROUTER_API_RUNTIME_URL = getRouterApiRuntimeUrl();
 
 // Module-level cache for capability endpoint (the result is stable across the session)
 type CapabilityRouteEntry = {
@@ -71,7 +72,7 @@ export class RouterApiService {
   private translate?: (key: string) => string;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || import.meta.env.VITE_ROUTER_API_KEY || 'demo';
+    this.apiKey = apiKey || getRouterApiKey();
   }
 
   // Capability for isolines: which dimensions are available per mode

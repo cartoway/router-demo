@@ -28,6 +28,7 @@ import {
 import unknownModes from './unknownModes.json';
 import availableModes from './availableModes.json';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { getEnabledTransportModes, getActiveTransportModes } from './env';
 
 export interface TransportMode {
   id: string;
@@ -53,9 +54,9 @@ const ALL_MODES_BASE: Array<{ id: string; icon: IconDefinition; color: string }>
   { id: 'foot', icon: faPersonWalking, color: '#6B7280' },
 ];
 
-// Get enabled modes from environment variable
+// Get enabled modes from runtime config (ENABLED_TRANSPORT_MODES in /env.js)
 const getEnabledModesFromEnv = (): string[] => {
-  const envModes = import.meta.env.VITE_ENABLED_TRANSPORT_MODES;
+  const envModes = getEnabledTransportModes();
 
   // Build unknown IDs list (strings only)
   const unknownIds = (Array.isArray(unknownModes) ? unknownModes : []).filter(
@@ -74,32 +75,28 @@ const getEnabledModesFromEnv = (): string[] => {
   }
 
   // Only keep env-specified modes that are available
-  const requested = envModes
-    .split(',')
-    .map((mode: string) => mode.trim())
-    .filter((mode: string) => mode.length > 0);
+  const requested = envModes;
 
   const filtered = requested.filter((id: string) => availableIds.includes(id) || unknownIds.includes(id));
   return filtered;
 };
 
-// Get active modes from environment variable (modes to be pre-selected)
+// Get active modes from runtime config (ACTIVE_TRANSPORT_MODES in /env.js, modes to be pre-selected)
 const getActiveModesFromEnv = (): string[] => {
-  const envModes = import.meta.env.VITE_ACTIVE_TRANSPORT_MODES;
+  const envModes = getActiveTransportModes();
 
   if (!envModes) {
     // Default active modes if no environment variable is set
     return ['car', 'cargo_ebike'];
   }
 
-  const activeModes = envModes.split(',').map((mode: string) => mode.trim()).filter((mode: string) => mode.length > 0);
-  return activeModes;
+  return envModes;
 };
 
 const enabledModesFromEnv = getEnabledModesFromEnv();
 const activeModesFromEnv = getActiveModesFromEnv();
 
-// Create transport modes array respecting the order from VITE_ENABLED_TRANSPORT_MODES
+// Create transport modes array respecting the order from ENABLED_TRANSPORT_MODES
 const createOrderedTransportModes = (): TransportMode[] => {
   // Append unknown modes with dev icon and flashy color
   const devColor = '#FF00AA';
@@ -120,10 +117,10 @@ const createOrderedTransportModes = (): TransportMode[] => {
     return acc;
   }, {} as Record<string, typeof allModes[0]>);
 
-  // Build ordered array based on VITE_ENABLED_TRANSPORT_MODES
+  // Build ordered array based on ENABLED_TRANSPORT_MODES
   const orderedModes: TransportMode[] = [];
 
-  // First, add modes in the order specified by VITE_ENABLED_TRANSPORT_MODES
+  // First, add modes in the order specified by ENABLED_TRANSPORT_MODES
   enabledModesFromEnv.forEach(modeId => {
     const mode = modesMap[modeId];
     if (mode) {
@@ -134,7 +131,7 @@ const createOrderedTransportModes = (): TransportMode[] => {
     }
   });
 
-  // Then, add any remaining modes that weren't in VITE_ENABLED_TRANSPORT_MODES (disabled)
+  // Then, add any remaining modes that weren't in ENABLED_TRANSPORT_MODES (disabled)
   allModes.forEach(mode => {
     if (!enabledModesFromEnv.includes(mode.id)) {
       orderedModes.push({

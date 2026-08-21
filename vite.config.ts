@@ -15,12 +15,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { copyFileSync, existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// Serve .env.js at /env.js (dev) and copy it to dist/env.js (build).
+// The deployed file can be overridden at runtime (e.g. Docker volume mount).
+const ENV_SOURCE = '.env.js';
+const ENV_PUBLIC_PATH = '/env.js';
+
+function runtimeEnvPlugin(): Plugin {
+  return {
+    name: 'runtime-env-js',
+    configureServer(server) {
+      server.middlewares.use(ENV_PUBLIC_PATH, (_req, res, next) => {
+        if (!existsSync(ENV_SOURCE)) return next();
+        res.setHeader('Content-Type', 'text/javascript');
+        res.end(readFileSync(ENV_SOURCE));
+      });
+    },
+    closeBundle() {
+      if (existsSync(ENV_SOURCE)) {
+        copyFileSync(ENV_SOURCE, resolve(process.cwd(), 'dist', 'env.js'));
+      }
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), runtimeEnvPlugin()],
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
@@ -31,4 +56,13 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/route-[hash].js',
+        chunkFileNames: 'assets/route-[hash].js',
+        assetFileNames: 'assets/route-[hash][extname]'
+      }
+    }
+  }
 });

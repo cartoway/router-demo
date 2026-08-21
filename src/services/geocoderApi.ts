@@ -1,7 +1,7 @@
 /*
  * Cartoway Geocoder service
  * - Forward geocoding search
- * - Reads VITE_GEOCODER_API_URL and VITE_GEOCODER_API_KEY
+ * - Reads GEOCODER_API_URL and GEOCODER_API_KEY from the runtime config (/env.js)
  */
 
 export interface GeocodeSuggestion {
@@ -16,13 +16,14 @@ export interface GeocodeOptions {
 }
 
 import type { ApiRequest } from '../types/api';
+import { getGeocoderApiUrl, getGeocoderApiKey } from '../config/env';
 
-const GEOCODER_BASE_URL = import.meta.env.VITE_GEOCODER_API_URL;
-const GEOCODER_API_KEY = import.meta.env.VITE_GEOCODER_API_KEY;
+const GEOCODER_BASE_URL = getGeocoderApiUrl();
+const GEOCODER_API_KEY = getGeocoderApiKey();
 
 function buildSearchUrl(query: string, opts?: GeocodeOptions): string {
   if (!GEOCODER_BASE_URL) {
-    throw new Error('VITE_GEOCODER_API_URL is not defined');
+    throw new Error('GEOCODER_API_URL is not defined');
   }
   const url = new URL(GEOCODER_BASE_URL.replace(/\/$/, ''));
   if (!/\/.+/.test(url.pathname)) {
